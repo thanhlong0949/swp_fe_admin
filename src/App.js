@@ -1,25 +1,37 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import PrivateRouteAdmin from './component/private-route/routeAdmin.jsx';
+import LoginAdmin from './Pages/login.jsx';
+import Admin from './Pages/admin.jsx';
+
+
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+
+  const router = createBrowserRouter([
+    {
+      path: "/loginAdmin",
+      element: <LoginAdmin />,
+    },
+    {
+      path: "/admin",
+      
+      element: <PrivateRouteAdmin />,
+      children: [
+        { path: "", element: <Admin /> }, 
+      ],
+    },
+    {
+      path: "/",
+      
+      element: <PrivateRouteAdmin />,
+      children: [
+        { path: "", element: <Admin /> }, 
+      ],
+    },
+  ]);
+
+  return <RouterProvider router={router} />;
 }
 
 export default App;
