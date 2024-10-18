@@ -11,7 +11,7 @@ import OrderList from '../component/admin/orderlist';
 import Shipping from '../component/admin/shipping';
 import { endAuthAdmin } from '../component/config/axios';
 import PriceList from '../component/admin/pricelist';
-
+import signalrservice from '../component/signalR/signalrservice';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -74,7 +74,7 @@ const Admin = () => {
                 return <div>Content not available</div>;
         }
     };
-
+    
     return (
         <Layout style={{ minHeight: '100vh' }}>
             <Sider width={200} theme="light">

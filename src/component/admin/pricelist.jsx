@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Input, Select, Modal, Form } from 'antd';
+import { Table, Button, Input, Select, Modal, Form, message } from 'antd';
 import { useEffect } from 'react';
 import api from '../config/axios';
 import Column from 'antd/es/table/Column';
@@ -160,14 +160,20 @@ const PriceList = ({ showModal}) => {
         }
     };
 
-    const addAdService = async (recordDetailService) => {
+    const addAdService = async () => {
         try {
-            const response = await api.post('/AdvancedService', recordDetailService);
-            alert("Thêm thành công dịch vụ gia tăng: " + recordDetailService.advancedServiceId);
-            console.log("Add ad service: ", recordDetailService.advancedServiceId);
+            const newAdService = recordDetailAdService;
+            const response = await api.post('/AdvancedService', {
+                aServiceName: newAdService.serviceName,
+                price: newAdService.price,
+                
+            });
+            message.success('Thêm dịch vụ gia tăng thành công');
+            console.log("Add ad service: ", newAdService.advancedServiceId);
             fetchAdServiceList();
         } catch (error) {
             console.error("Error adding ad service: ", error.response.data);
+            message.error('Thêm dịch vụ thất bại');
         }
     };
     const handleAddAdServiceCancel = () => {
@@ -224,7 +230,7 @@ const PriceList = ({ showModal}) => {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <h1>Bảng giá</h1>
+                <h1>Quản lý bảng giá</h1>
                 
             </div>
             <div style={{ marginBottom: '20px' }}>
@@ -378,9 +384,7 @@ const PriceList = ({ showModal}) => {
                 onCancel={handleAddAdServiceCancel}
             >
                 <Form layout="vertical">
-                    <Form.Item label="Mã dịch vụ">
-                        <Input placeholder="Nhập mã dịch vụ" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, advancedServiceId: e.target.value })}/>
-                    </Form.Item>
+                    
                     <Form.Item label="Tên dịch vụ">
                         <Input placeholder="Nhập tên dịch vụ" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, serviceName: e.target.value })}/>
                     </Form.Item>

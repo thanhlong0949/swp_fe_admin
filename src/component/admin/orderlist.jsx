@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Table, Button, Input, Select, Modal, message, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Input, Select, Modal, message, Tag, Descriptions } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import CurrencyFormat from 'react-currency-format';
-import { useEffect } from 'react';
 import api from '../config/axios';
+import signalrservice from '../signalR/signalrservice';
 
 
 const { Search } = Input;
@@ -18,10 +18,12 @@ const OrderList = ({ showModal }) => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [recordDetail, setRecordDetail] = useState({});
     const columns = [
-        { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId"},
-        { title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", render: (value) => {
-            return value == 0 ? "Chưa thêm vào chuyến vận chuyển" : value;
-        }},
+        { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
+        {
+            title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", render: (value) => {
+                return value == 0 ? "Chưa thêm vào chuyến vận chuyển" : value;
+            }
+        },
         { title: "Tên khách hàng", dataIndex: "customerName", key: "customerName" },
         { title: "Mã dịch vụ", dataIndex: "serviceId", key: "serviceId" },
         {
@@ -30,34 +32,65 @@ const OrderList = ({ showModal }) => {
             render: (value) => <CurrencyFormat value={value} displayType={'text'} thousandSeparator={true} prefix={'₫ '} />,
             key: "totalPrice"
         },
-        { title: "Trạng thái đơn hàng", dataIndex: "status", key: "status", render: (value, record) => {
-            if (value === 'Pending') {
-                return <Select
-                defaultValue={value} 
-                style={{ width: 200, marginRight: '10px' }}
-                placeholder="Trạng thái đơn hàng"
-                onChange={(newValue) => {
-                record.status = newValue;
-                setOrderStatus(newValue);
-            }}
-        >
-            <Option value="Pending">Chờ xử lý</Option>
-            <Option value="Waiting">Chờ lấy hàng</Option>
-            </Select>
-            }
-            else {
-                return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish'  ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : 'Đã hủy'}</Tag> 
+        {
+            title: "Trạng thái đơn hàng", dataIndex: "status", key: "status", render: (value, record) => {
+                if (value === 'Pending') {
+                    return <Select
+                        defaultValue={value}
+                        style={{ width: 200, marginRight: '10px' }}
+                        placeholder="Trạng thái đơn hàng"
+                        onChange={(newValue) => {
+                            record.status = newValue;
+                            setOrderStatus(newValue);
+                        }}
+                    >
+                        <Option value="Pending">Chờ xử lý</Option>
+                        <Option value="Waiting">Chờ lấy hàng</Option>
+                    </Select>
+                }
+                else {
+                    return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : 'Đã hủy'}</Tag>
 
+                }
             }
-        }
-            
+
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
+    const startSignalR = async () => {
+        const connectionState = signalrservice.connection.state;
 
+        if (connectionState === 'Disconnected') {
+            await signalrservice.start();
+            signalrservice.onOrderDetailCreated();
+        } else if (connectionState === 'Disconnecting') {
+            console.warn('SignalR connection is currently disconnecting. Waiting for it to complete...');
+            await new Promise(resolve => {
+                const checkState = setInterval(() => {
+                    if (signalrservice.connection.state === 'Disconnected') {
+                        clearInterval(checkState);
+                        startSignalR();
+                        resolve();
+
+                    }
+                }, 1000); // Check every second
+            });
+            await startSignalR(); // Try starting again after it disconnects
+        } else if (connectionState === 'Connecting') {
+            console.warn('SignalR connection is currently connecting. Please wait...');
+        } else {
+            console.warn('SignalR connection is in an unexpected state:', connectionState);
+        }
+    };
     useEffect(() => {
         fetchOrdersList();
-    }, []);
+
+        startSignalR();
+
+        return () =>
+            signalrservice.connection.stop();
+    }, []) //
+
 
     const showDetailModal = (record) => {
         console.log("Record: ", record);
@@ -105,10 +138,10 @@ const OrderList = ({ showModal }) => {
         }
         console.log("OrderDetail updated:", orderDetail);
         console.log("OrderDetail:", order);
-        try {   
+        try {
             const response = await api.put(`/OrderDetail/${orderDetail.orderDetailId}`, orderDetail);
             console.log("OrderDetail updated:", response.data);
-            message.success("Cập nhật đơn hàng thành công");    
+            message.success("Cập nhật đơn hàng thành công");
             fetchOrdersList();
         } catch (error) {
             console.error('Error updating order detail:', error);
@@ -141,9 +174,10 @@ const OrderList = ({ showModal }) => {
             serviceName: order.serviceName,
         });
     });
+
     return (
         <div>
-            
+            <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
                 <Search
                     placeholder="Tìm kiếm đơn hàng"
@@ -175,42 +209,51 @@ const OrderList = ({ showModal }) => {
                 title: 'Thao tác',
                 key: 'action',
                 render: (text, record) => (
-                    <Button style={{backgroundColor: 'blue', color: 'white', width: '88px'}} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
+                    <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
                 ),
-            },{
-                
+            }, {
+
                 key: 'update',
                 render: (text, record) => (
-                    record.status === 'Pending' ? <Button style={{backgroundColor: '#ff6600', color: 'white', width: '88px'}} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
+                    record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
             }]} dataSource={orderList} />
-            <Modal
-                title="Chi tiết đơn hàng"
-
-                open={isDetailModalVisible}
-                onOk={handleDetailCancel}
-                onCancel={handleDetailCancel}
-            >
-                <p>Mã đơn hàng: {recordDetail.orderDetailId}</p>
-                <p>Mã chuyến vận chuyển: {recordDetail.orderId}</p>
-                <p>Tên khách hàng: {recordDetail.customerName}</p>
-                <p>Mã dịch vụ: {recordDetail.serviceId}</p>
-                <p>Cân nặng: {recordDetail.weight}</p>
-                <p>Số lượng: {recordDetail.quantity}</p>
-                <p>Tổng tiền: <CurrencyFormat value={recordDetail.totalPrice} displayType={'text'} thousandSeparator={true} prefix={'₫ '} /></p>
-                <p>Tình trạng cá: {recordDetail.koiStatus}</p>
-                <p>Vật phẩm đi kèm: {recordDetail.attachedItem}</p>
-                <p>Trạng thái đơn hàng: {recordDetail.status}</p>
-                <p>Ngày đặt hàng: {moment(recordDetail.createdDate).format('DD/MM/YYYY')}</p>
-                <p>Địa chỉ lấy hàng: {recordDetail.createdAddress}</p>
-                <p>Địa chỉ giao hàng: {recordDetail.deliveryAddress}</p>
-                <p>Tên người nhận: {recordDetail.receiverName}</p>
-                <p>Số điện thoại người nhận: {recordDetail.receiverPhone}</p>
-                <p>Đánh giá: {recordDetail.rating === 0 ? 'Không có đánh giá' : Array.from({ length: 5 }, (_, index) => (
-                    index < recordDetail.rating ? <StarFilled key={index} type="star" name='star' value={recordDetail.rating} /> : <StarOutlined key={index} type="star" name='star' value={recordDetail.rating} />
-                ))}</p>
-                <p>Phản hồi: {recordDetail.feedback === null ? 'Không có phản hồi' : recordDetail.feedback}</p>
-            </Modal>
+            <div style={{ width: '80%', maxWidth: '100%' }}>
+                <Modal
+                    open={isDetailModalVisible}
+                    onOk={handleDetailCancel}
+                    onCancel={handleDetailCancel}
+                    footer={[
+                        <Button key="back" onClick={handleDetailCancel}>
+                            Đóng
+                        </Button>,
+                    ]}
+                >
+                    <Descriptions title="Chi tiết đơn hàng" bordered style={{ width: '100%' }}>
+                        <Descriptions.Item label="Mã đơn hàng" span={3}>{recordDetail.orderDetailId}</Descriptions.Item>
+                        <Descriptions.Item label="Mã chuyến vận chuyển" span={3}>{recordDetail.orderId}</Descriptions.Item>
+                        <Descriptions.Item label="Tên khách hàng" span={3}>{recordDetail.customerName}</Descriptions.Item>
+                        <Descriptions.Item label="Mã dịch vụ" span={3}>{recordDetail.serviceId}</Descriptions.Item>
+                        <Descriptions.Item label="Cân nặng" span={3}>{recordDetail.weight}</Descriptions.Item>
+                        <Descriptions.Item label="Số lượng" span={3}>{recordDetail.quantity}</Descriptions.Item>
+                        <Descriptions.Item label="Tổng tiền" span={3}><CurrencyFormat value={recordDetail.totalPrice} displayType={'text'} thousandSeparator={true} prefix={'₫ '} /></Descriptions.Item>
+                        <Descriptions.Item label="Tình trạng cá" span={3}>{recordDetail.koiStatus}</Descriptions.Item>
+                        <Descriptions.Item label="Vật phẩm đi kèm" span={3}>{recordDetail.attachedItem}</Descriptions.Item>
+                        <Descriptions.Item label="Trạng thái đơn hàng" span={3}>{recordDetail.status}</Descriptions.Item>
+                        <Descriptions.Item label="Ngày đặt hàng" span={3}>{moment(recordDetail.createdDate).format('DD/MM/YYYY')}</Descriptions.Item>
+                        <Descriptions.Item label="Địa chỉ lấy hàng" span={3}>{recordDetail.startLocation}</Descriptions.Item>
+                        <Descriptions.Item label="Địa chỉ giao hàng" span={3}>{recordDetail.destination}</Descriptions.Item>
+                        <Descriptions.Item label="Tên người nhận" span={3}>{recordDetail.receiverName}</Descriptions.Item>
+                        <Descriptions.Item label="Số điện thoại người nhận" span={3}>{recordDetail.receiverPhone}</Descriptions.Item>
+                        <Descriptions.Item label="Đánh giá" span={3}>
+                            {recordDetail.rating === 0 ? 'Không có đánh giá' : Array.from({ length: 5 }, (_, index) => (
+                                index < recordDetail.rating ? <StarFilled key={index} type="star" name='star' value={recordDetail.rating} /> : <StarOutlined key={index} type="star" name='star' value={recordDetail.rating} />
+                            ))}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Phản hồi" span={3}>{recordDetail.feedback === null ? 'Không có phản hồi' : recordDetail.feedback}</Descriptions.Item>
+                    </Descriptions>
+                </Modal>
+            </div>
         </div>
     );
 };

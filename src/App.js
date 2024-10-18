@@ -22,8 +22,7 @@ function App() {
       ],
     },
     {
-      path: "/",
-      
+      path: "/", 
       element: <PrivateRouteAdmin />,
       children: [
         { path: "", element: <Admin /> }, 
