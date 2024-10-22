@@ -7,8 +7,8 @@ class SignalRService {
     constructor() {
         this.connection = new HubConnectionBuilder()
             .withUrl('https://localhost:7167/orderHub') // Adjust the URL as necessary
-            // .withAutomaticReconnect()
-            .configureLogging(LogLevel.Information)
+            .withAutomaticReconnect()
+            // .configureLogging(LogLevel.Information)
             .build();
     }
 
@@ -21,13 +21,13 @@ class SignalRService {
         }
     }
 
-    onOrderDetailCreated(callback) {
+    onOrderDetailCreated() {
         this.connection.on('ReceiveOrderNotification', (message) => {
-            console.log('ReceiveOrderNotification', message);
             notification.open({
                 message: 'Thông báo',
                 description: message,
-                duration: 5000,
+                showProgress: true,
+                pauseOnHover: true,
             });
         });
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Modal, message, Tag, Descriptions } from 'antd';
+import { Table, Button, Input, Select, Modal, message, Tag, Descriptions, Spin } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import CurrencyFormat from 'react-currency-format';
@@ -17,6 +17,7 @@ const OrderList = ({ showModal }) => {
     const [ordersList, setOrdersList] = useState([]);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [recordDetail, setRecordDetail] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
     const columns = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
@@ -69,7 +70,7 @@ const OrderList = ({ showModal }) => {
                 const checkState = setInterval(() => {
                     if (signalrservice.connection.state === 'Disconnected') {
                         clearInterval(checkState);
-                        startSignalR();
+                    
                         resolve();
 
                     }
@@ -89,7 +90,7 @@ const OrderList = ({ showModal }) => {
 
         return () =>
             signalrservice.connection.stop();
-    }, []) //
+    }, []);
 
 
     const showDetailModal = (record) => {
@@ -104,6 +105,7 @@ const OrderList = ({ showModal }) => {
     }
 
     const fetchOrdersList = async () => {
+        setIsLoading(true);
         try {
             const response = await api.get('/OrderDetail');
             setOrdersList(response.data);
@@ -111,6 +113,9 @@ const OrderList = ({ showModal }) => {
         }
         catch (error) {
             console.error('Error fetching orders list:', error);
+        }
+        finally {
+            setIsLoading(false);
         }
     };
 
@@ -177,6 +182,7 @@ const OrderList = ({ showModal }) => {
 
     return (
         <div>
+            {isLoading && <Spin size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />}
             <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
                 <Search
@@ -204,6 +210,7 @@ const OrderList = ({ showModal }) => {
                     <Option value="30">30 ngày qua</Option>
                     <Option value="90">90 ngày qua</Option>
                 </Select>
+                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => fetchOrdersList()}>Làm mới</Button>
             </div>
             <Table columns={[...columns, {
                 title: 'Thao tác',
