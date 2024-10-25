@@ -192,13 +192,15 @@ const OrderList = ({ showModal }) => {
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
-                    onChange={(value) => setFilterStatus(value)}
+                    onChange={(e) => setFilterStatus({ status: e })}
+                    
                 >
                     <Option value="">Tất cả trạng thái</Option>
-                    <Option value="Đang xử lý">Đang xử lý</Option>
-                    <Option value="Đang vận chuyển">Đang vận chuyển</Option>
-                    <Option value="Đã giao hàng">Đã giao hàng</Option>
-                    <Option value="Đã hủy">Đã hủy</Option>
+                    <Option value="Pending">Chờ xử lý</Option>
+                    <Option value="Waiting">Chờ lấy hàng</Option>
+                    <Option value="Delivering">Đang vận chuyển</Option>
+                    <Option value="Finish">Hoàn thành</Option>
+                    <Option value="Cancel">Đã hủy</Option>
                 </Select>
                 <Select
                     style={{ width: 200 }}
@@ -224,7 +226,7 @@ const OrderList = ({ showModal }) => {
                 render: (text, record) => (
                     record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
-            }]} dataSource={orderList} />
+            }]} dataSource={orderList.filter(order => Object.keys(filterStatus).every(key => order[key] === filterStatus[key]))} />
             <div style={{ width: '80%', maxWidth: '100%' }}>
                 <Modal
                     open={isDetailModalVisible}

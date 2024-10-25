@@ -37,8 +37,8 @@ const Shipping = ({ showModal }) => {
         { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (value) => <Text>{value === 'road' ? 'Đường bộ' : 'Đường hàng không'}</Text> },
         { title: 'Điểm xuất phát', dataIndex: 'startPoint', key: 'startPoint' },
         { title: 'Điểm đến', dataIndex: 'endPoint', key: 'endPoint' },
-        { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate' },
-
+        { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate', render: (value) => moment(value).format('DD/MM/YYYY')},
+        { title: 'Ngày đến', dataIndex: 'arrivalDate', key: 'arrivalDate', render: (value) => moment(value).format('DD/MM/YYYY')},
         { title: 'Trạng thái', dataIndex: 'status', key: 'status' , render: (value) => 
         <Tag color={value === 'Ready' || value === 'Pending' ? 'blue' : value === 'Delivering' ? 'orange' : value === 'Finish' ? 'green' : 'gray'}>{value === 'Ready' || value === 'Pending' ? 'Sẵn sàng'  : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành': ''}</Tag> 
 
@@ -67,16 +67,16 @@ const Shipping = ({ showModal }) => {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
             , render: (value, record) =>
                 <Select
-                    defaultValue={value} 
+                    value={value} 
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
                     onChange={(newValue) => {
                         record.status = newValue;
-                        console.log(record); 
+                        console.log(record + " " + value + " " + newValue); 
                         
                     }}
                 >
-                    <Option value="Waiting">Chờ lấy hàng</Option>
+                    
                     <Option value="Delivering">Đang vận chuyển</Option>
                     <Option value="Finish">Hoàn thành</Option>
                 </Select>
@@ -95,7 +95,9 @@ const Shipping = ({ showModal }) => {
             render: (value) => <CurrencyFormat value={value} displayType={'text'} thousandSeparator={true} prefix={'₫ '} />,
             key: "price"
         },
-        { title: "Trạng thái đơn hàng", dataIndex: "status", key: "status" },
+        { title: "Trạng thái đơn hàng", dataIndex: "status", key: "status" ,
+            render: (value) => "Chờ lấy hàng"
+         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
 
@@ -117,7 +119,7 @@ const Shipping = ({ showModal }) => {
             const response = await api.get('/OrderDetail/status/waiting');
             setAddOrderDetailList(response.data);
             console.log(addOrderDetailList);
-
+            fetchOrderDetailList(shippingDetail);
         } catch (error) {
             console.error('Error adding order detail:', error.response.data);
         }
@@ -142,7 +144,7 @@ const Shipping = ({ showModal }) => {
         try {
             const response = await api.get('/Order');
             setShippingList(response.data);
-            console.log(response.data);
+            console.log("shipping", response.data);
         } catch (error) {
             console.error('Error fetching shipping list:', error.response.data);
         }
@@ -184,7 +186,7 @@ const Shipping = ({ showModal }) => {
 
                 const response = await api.get(`/OrderDetail/${order.orderDetailId}`);
                 const orderDetail = response.data;
-                orderDetail.status = 'In transit';
+                orderDetail.status = 'Delivering';
                 orderDetail.orderId = orderId;
                 const response2 = await api.put(`/OrderDetail/${order.orderDetailId}`, orderDetail);
                 console.log(response2.data);
@@ -247,7 +249,7 @@ const Shipping = ({ showModal }) => {
     const confirm = async (record) => {
         console.log('Deleting orderDetailId:', record.orderDetailId); // Log the ID to be deleted
         try {
-            record.status = 'Pending';
+            record.status = 'Waiting';
             record.orderId = 0;
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             console.log(response.data);
@@ -275,10 +277,14 @@ const Shipping = ({ showModal }) => {
         console.log("record", record);
 
         setIsDetailModalVisible(true);
-        setShippingDetail(record);
+        setShippingDetail(prev => ({
+            ...prev,
+            ...record
+        }));
         setOrderId(record.tripCode);
         fetchOrderDetailList(record);
-
+        console.log("shippingDetail", shippingDetail);
+        
     };
 
     useEffect(() => {
@@ -287,13 +293,15 @@ const Shipping = ({ showModal }) => {
 
     let shipList = [];
     shippingList.forEach(ship => {
+        
         shipList.push({
             key: ship.orderId,
             tripCode: ship.orderId,
             method: ship.transportMethod,
             startPoint: ship.startLocation,
             endPoint: ship.destination,
-            departureDate: moment(ship.departureDate).format('DD/MM/YYYY'),
+            departureDate: ship.departureDate,
+            arrivalDate: ship.arrivalDate,
             orderCount: ship?.orderDetails?.length ? ship.orderDetails.length : 0,
             totalWeight: ship.totalWeight,
             status: ship.status,
@@ -302,8 +310,7 @@ const Shipping = ({ showModal }) => {
             orderDetails: ship?.orderDetails,
         });
     });
-
-
+   
     const updateShipping = async (record) => {
         try {
             const order = {
@@ -405,13 +412,13 @@ const Shipping = ({ showModal }) => {
 
                 footer={<Button style={{ width: '100px' }} onClick={() => setIsDetailModalVisible(false)}>Đóng</Button>}
             >
-                <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <Form.Item label="Mã chuyến">
-                        <Input value={shippingDetail.tripCode} disabled />
+                <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} initialValues={shippingDetail}>
+                    <Form.Item label="Mã chuyến" name="tripCode">
+                        <Input  disabled />
                     </Form.Item>
-                    <Form.Item label="Phương thức">
+                    <Form.Item label="Phương thức" name="method">
                         <Select
-                            value={shippingDetail.method}
+                            
                             onChange={(value) => setShippingDetail({ ...shippingDetail, method: value })}
                             style={{ width: 200 }}
                         >
@@ -419,19 +426,49 @@ const Shipping = ({ showModal }) => {
                             <Option value="air">Đường hàng không</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item label="Điểm xuất phát">
-                        <Input value={shippingDetail.startPoint} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
+                    <Form.Item label="Điểm xuất phát" name="startPoint">
+                        <Input  onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
                     </Form.Item>
-                    <Form.Item label="Điểm đến">
-                        <Input value={shippingDetail.endPoint} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
+                    <Form.Item label="Điểm đến" name="endPoint">
+                        <Input  onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
                     </Form.Item>
-                    <Form.Item label="Ngày khởi hành">
-                        
-                        <DatePicker disabled placeholder="Chọn ngày khởi hành" value={moment(shippingDetail.departureDate)} onChange={(value) => setShippingDetail({ ...shippingDetail, departureDate: value })} />
+                    <Form.Item label="Ngày khởi hành" >
+                        <DatePicker 
+                            value={moment(shippingDetail.departureDate)}
+                            placeholder="Chọn ngày khởi hành" 
+                            onChange={(value) => {
+                                if (value && value.isValid()) { // Validate the date
+                                    setShippingDetail(prev => ({
+                                        ...prev,
+                                        departureDate: value
+                                    }));
+                                    console.log(shippingDetail.departureDate);
+                                } else {
+                                    console.error('Invalid departure date');
+                                }
+                            }}
+                            disabledDate={(current) => current < moment().startOf('day')} 
+                        />
                     </Form.Item>
-                    <Form.Item label="Ngày đến">
-                        <DatePicker disabled placeholder="Chọn ngày đến" value={moment(shippingDetail.arrivalDate)} onChange={(value) => setShippingDetail({ ...shippingDetail, arrivalDate: value })} />
+                    <Form.Item label="Ngày đến" >
+                        <DatePicker
+                            value={moment(shippingDetail.arrivalDate)}
+                            placeholder="Chọn ngày đến" 
+                            onChange={(value) => {
+                                if (value && value.isValid()) { // Validate the date
+                                    setShippingDetail(prev => ({
+                                        ...prev,
+                                        arrivalDate: value
+                                    }));
+                                    console.log(shippingDetail.arrivalDate);
+                                } else {
+                                    console.error('Invalid arrival date');
+                                }
+                            }} 
+                            disabledDate={(current) => current < shippingDetail?.departureDate} 
+                        />
                     </Form.Item>
+                    
                     <Form.Item label="Số đơn hàng" >
                         <Input value={orderDetailList?.length} disabled />
                     </Form.Item>
@@ -606,10 +643,11 @@ const Shipping = ({ showModal }) => {
                 </Select>
             </Modal>
             <Modal
-                style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '700px' }} // Set a fixed width for the modal
                 title="Chọn đơn hàng"
                 open={isAddOrderDetailModalVisible}
                 onCancel={() => setIsAddOrderDetailModalVisible(false)}
+                width={900}
+                
                 footer={<Button style={{ width: '100px' }} onClick={() => setIsAddOrderDetailModalVisible(false)}>Đóng</Button>}
             >
                 <Table

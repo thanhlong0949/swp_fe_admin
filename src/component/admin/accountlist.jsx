@@ -63,7 +63,7 @@ const AccountList = ({}) => {
             phone: account.phone,
             address: account.address,
             registerDate: account.registrationDate,
-            status: account.status,
+            status: 'Active',
             role: "customer",
         });
     });
@@ -214,10 +214,10 @@ const AccountList = ({}) => {
                                 <Input value={recordDetail.phone} disabled />
                             </Form.Item>
                             <Form.Item label="Trạng thái">
-                                <Input value={recordDetail.status} disabled />
+                                <Input value={recordDetail.status === "Active" ? "Đang hoạt động" : "Không hoạt động"} disabled />
                             </Form.Item>
                             <Form.Item label="Vai trò">
-                                <Input value={recordDetail.role} disabled />
+                                <Input value={"Khách hàng"} disabled />
                             </Form.Item>
                             <Form.Item label="Địa chỉ">
                                 <Input value={recordDetail.address} disabled />
