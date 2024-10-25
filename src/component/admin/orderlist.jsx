@@ -202,16 +202,7 @@ const OrderList = ({ showModal }) => {
                     <Option value="Finish">Hoàn thành</Option>
                     <Option value="Cancel">Đã hủy</Option>
                 </Select>
-                <Select
-                    style={{ width: 200 }}
-                    placeholder="Thời gian đặt hàng"
-                    onChange={(value) => setFilterTime(value)}
-                >
-                    <Option value="">Tất cả thời gian</Option>
-                    <Option value="7">7 ngày qua</Option>
-                    <Option value="30">30 ngày qua</Option>
-                    <Option value="90">90 ngày qua</Option>
-                </Select>
+                
                 <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => fetchOrdersList()}>Làm mới</Button>
             </div>
             <Table columns={[...columns, {
@@ -226,7 +217,7 @@ const OrderList = ({ showModal }) => {
                 render: (text, record) => (
                     record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
-            }]} dataSource={orderList.filter(order => Object.keys(filterStatus).every(key => order[key] === filterStatus[key]))} />
+            }]} dataSource={filterStatus.status === '' ? orderList : orderList.filter(order => Object.keys(filterStatus).every(key => order[key] === filterStatus[key]))} />
             <div style={{ width: '80%', maxWidth: '100%' }}>
                 <Modal
                     open={isDetailModalVisible}

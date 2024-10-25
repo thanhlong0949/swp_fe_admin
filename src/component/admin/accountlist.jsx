@@ -165,24 +165,15 @@ const AccountList = ({}) => {
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Vai trò"
-                    onChange={(value) => setFilterRole(value)}
+                    onChange={(e) => setFilterRole({ role: e })}
                 >
                     <Option value="">Tất cả vai trò</Option>
-                    <Option value="Admin">Admin</Option>
-                    <Option value="Quản lý">Quản lý</Option>
-                    <Option value="Nhân viên">Nhân viên</Option>
-                    <Option value="Nhân viên giao hàng">Nhân viên giao hàng</Option>
+                    <Option value="customer">Khách hàng</Option>
+                    <Option value="Manager">Quản lý</Option>
+                    <Option value="Sale Staff">Nhân viên bán hàng</Option>
+                    <Option value="Delivering Staff">Nhân viên giao hàng</Option>
                 </Select>
-                <Select
-                    style={{ width: 200 }}
-                    placeholder="Thời gian tham gia"
-                    onChange={(value) => setFilterJoinDate(value)}
-                >
-                    <Option value="">Tất cả thời gian</Option>
-                    <Option value="7">7 ngày qua</Option>
-                    <Option value="30">30 ngày qua</Option>
-                    <Option value="90">90 ngày qua</Option>
-                </Select>
+                
             </div>
             <Table columns={[...columns, {
                 title: 'Thao tác',
@@ -193,7 +184,7 @@ const AccountList = ({}) => {
 
 
                 ),
-            }]} dataSource={userList} />
+            }]} dataSource={filterRole.role === '' ? userList : userList.filter(user => Object.keys(filterRole).every(key => user[key] === filterRole[key]))} />
 
             <Modal
                 title="Chi tiết tài khoản"

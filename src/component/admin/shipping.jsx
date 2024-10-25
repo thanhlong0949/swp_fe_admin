@@ -388,8 +388,8 @@ const Shipping = ({ showModal }) => {
                     onChange={(value) => setFilterMethod(value)}
                 >
                     <Option value="">Tất cả phương thức</Option>
-                    <Option value="Đường bộ">Đường bộ</Option>
-                    <Option value="Đường hàng không">Đường hàng không</Option>
+                    <Option value="road">Đường bộ</Option>
+                    <Option value="air">Đường hàng không</Option>
                 </Select>
                 <Select
                     style={{ width: 200 }}
@@ -398,13 +398,22 @@ const Shipping = ({ showModal }) => {
                     onChange={(value) => setFilterStatus(value)}
                 >
                     <Option value="">Tất cả trạng thái</Option>
-                    <Option value="Pending">Đang xử lý</Option>
-                    <Option value="In Transit">Đang vận chuyển</Option>
-                    <Option value="Deliveried">Đã giao hàng</Option>
-                    <Option value="Cancelled">Đã hủy</Option>
+                    <Option value="Ready">Sẵn sàng</Option>
+                    <Option value="Delivering">Đang vận chuyển</Option>
+                    <Option value="Finish">Đã giao hàng</Option>
                 </Select>
             </div>
-            <Table columns={columns} dataSource={shipList} />
+            <Table 
+                columns={columns} 
+                dataSource={
+                    filterMethod === '' && filterStatus === '' 
+                    ? shipList 
+                    : shipList.filter(ship => 
+                        (filterMethod === '' || ship.method === filterMethod) && 
+                        (filterStatus === '' || ship.status === filterStatus)
+                    )
+                } 
+            />
             <Modal width={900}
                 title="Chi tiết chuyến vận chuyển"
                 open={isDetailModalVisible}
@@ -697,7 +706,7 @@ const Shipping = ({ showModal }) => {
                     <Form.Item label="Điểm xuất phát" rules={[{ required: true, message: 'Vui lòng nhập điểm xuất phát!' }]}>
                         <Input placeholder="Nhập điểm xuất phát"  onChange={(value) => setNewOrder({ ...newOrder, startPoint: value.target.value })} />
                     </Form.Item>
-                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng nhập điểm đến!' }]}>
+                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng nhập điểm đ��n!' }]}>
                         <Input placeholder="Nhập điểm đến"  onChange={(value) => setNewOrder({ ...newOrder, endPoint: value.target.value })} />
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" rules={[{ required: true, message: 'Vui lòng chọn ngày khởi hành!' }]}>
