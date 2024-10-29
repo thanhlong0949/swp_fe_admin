@@ -1,5 +1,5 @@
 import axios from 'axios'; // Changed import to the actual axios package
-const baseURL = 'http://koishipping.somee.com/api';
+const baseURL = 'https://tadnuat-001-site1.dtempurl.com/api';
 
 const config = {
     baseURL: baseURL,
