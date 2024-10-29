@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Modal, message, Tag, Descriptions, Spin } from 'antd';
+import { Table, Button, Input, Select, Modal, message, Tag, Descriptions, Spin, Image } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import CurrencyFormat from 'react-currency-format';
@@ -11,7 +11,7 @@ const { Search } = Input;
 const { Option } = Select;
 
 const OrderList = ({ showModal }) => {
-    const [filterStatus, setFilterStatus] = useState('');
+    const [filterStatus, setFilterStatus] = useState({ name: '', status: '' });
     const [filterTime, setFilterTime] = useState('');
     const [orderStatus, setOrderStatus] = useState('');
     const [ordersList, setOrdersList] = useState([]);
@@ -70,7 +70,7 @@ const OrderList = ({ showModal }) => {
                 const checkState = setInterval(() => {
                     if (signalrservice.connection.state === 'Disconnected') {
                         clearInterval(checkState);
-                    
+
                         resolve();
 
                     }
@@ -185,15 +185,22 @@ const OrderList = ({ showModal }) => {
             {isLoading && <Spin size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />}
             <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
-                <Search
+                <Input
                     placeholder="Tìm kiếm đơn hàng"
                     style={{ width: 200, marginRight: '10px' }}
+                    onChange={(e) => {
+                        console.log("e: ", e.target.value);
+                        setFilterStatus({ name: e.target.value });
+                    }}
                 />
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
-                    onChange={(e) => setFilterStatus({ status: e })}
-                    
+                    onChange={(e) => {
+                        console.log("status: ", e);
+                        setFilterStatus({ status: e });
+                    }}
+
                 >
                     <Option value="">Tất cả trạng thái</Option>
                     <Option value="Pending">Chờ xử lý</Option>
@@ -202,7 +209,7 @@ const OrderList = ({ showModal }) => {
                     <Option value="Finish">Hoàn thành</Option>
                     <Option value="Cancel">Đã hủy</Option>
                 </Select>
-                
+
                 <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => fetchOrdersList()}>Làm mới</Button>
             </div>
             <Table columns={[...columns, {
@@ -217,7 +224,13 @@ const OrderList = ({ showModal }) => {
                 render: (text, record) => (
                     record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
-            }]} dataSource={filterStatus.status === '' ? orderList : orderList.filter(order => Object.keys(filterStatus).every(key => order[key] === filterStatus[key]))} />
+            }]} dataSource={filterStatus.status === '' && filterStatus.name === ''
+                ? orderList
+                : orderList.filter(order =>
+                    (filterStatus.name === '' || order.customerName.includes(filterStatus.name)) &&
+                    (filterStatus.status === '' || order.status === filterStatus.status)
+                )
+            } />
             <div style={{ width: '80%', maxWidth: '100%' }}>
                 <Modal
                     open={isDetailModalVisible}
@@ -238,7 +251,7 @@ const OrderList = ({ showModal }) => {
                         <Descriptions.Item label="Số lượng" span={3}>{recordDetail.quantity}</Descriptions.Item>
                         <Descriptions.Item label="Tổng tiền" span={3}><CurrencyFormat value={recordDetail.totalPrice} displayType={'text'} thousandSeparator={true} prefix={'₫ '} /></Descriptions.Item>
                         <Descriptions.Item label="Tình trạng cá" span={3}>{recordDetail.koiStatus}</Descriptions.Item>
-                        <Descriptions.Item label="Vật phẩm đi kèm" span={3}>{recordDetail.attachedItem}</Descriptions.Item>
+                        <Descriptions.Item label="Vật phẩm đi kèm" span={3}><Image src={recordDetail.attachedItem} width={100} height={100} /></Descriptions.Item>
                         <Descriptions.Item label="Trạng thái đơn hàng" span={3}>{recordDetail.status}</Descriptions.Item>
                         <Descriptions.Item label="Ngày đặt hàng" span={3}>{moment(recordDetail.createdDate).format('DD/MM/YYYY')}</Descriptions.Item>
                         <Descriptions.Item label="Địa chỉ lấy hàng" span={3}>{recordDetail.startLocation}</Descriptions.Item>

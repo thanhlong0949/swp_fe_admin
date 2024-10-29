@@ -6,7 +6,7 @@ import { notification } from 'antd';
 class SignalRService {
     constructor() {
         this.connection = new HubConnectionBuilder()
-            .withUrl('https://localhost:7167/orderHub') // Adjust the URL as necessary
+            .withUrl('http://koishipping.somee.com/orderHub') // Adjust the URL as necessary
             .withAutomaticReconnect()
             // .configureLogging(LogLevel.Information)
             .build();
