@@ -230,7 +230,7 @@ const OrderList = ({ showModal }) => {
                         <Descriptions.Item label="Số lượng" span={3}>{recordDetail.quantity}</Descriptions.Item>
 
                         <Descriptions.Item label="Dịch vụ" span={3}>{recordDetail.serviceName === "economy" ? "Giao tiết kiệm" : recordDetail.serviceName === "express" ? "Giao hoả tốc" : "Giao nhanh"}</Descriptions.Item>
-                        <Descriptions.Item label="Tổng tiền" span={3}><span>{recordDetail.totalPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span></Descriptions.Item>
+                        <Descriptions.Item label="Tổng tiền" span={3}><span>{recordDetail.totalPrice?.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span></Descriptions.Item>
                         <Descriptions.Item label="Trạng thái đơn hàng" span={3}>{recordDetail.status === 'Pending' ? 'Chờ xử lý' : recordDetail.status === 'Waiting' ? 'Chờ lấy hàng' : recordDetail.status === 'Delivering' ? 'Đang vận chuyển' : recordDetail.status === 'Finish' ? 'Hoàn thành' : recordDetail.status === 'Cancel' ? 'Đã hủy' : 'Đã giao hàng'}</Descriptions.Item>
                         <Descriptions.Item span={3} />
                         <Descriptions.Item label="Ngày đặt hàng" span={3}>{moment(recordDetail.createdDate).format('DD/MM/YYYY')}</Descriptions.Item>
