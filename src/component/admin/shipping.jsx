@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, Select, Modal, Tag, Form, message, Popconfirm, DatePicker, Col, Row, Typography, Descriptions, Spin } from 'antd';
 import moment from 'moment';
 import api from '../config/axios';
-import CurrencyFormat from 'react-currency-format';
+
 
 
 const { Option } = Select;
@@ -62,7 +62,7 @@ const Shipping = ({ showModal }) => {
             dataIndex: "price",
             key: "price",
 
-            render: (value) => <CurrencyFormat value={value} displayType={'text'} thousandSeparator={true} prefix={'₫ '} />,
+            render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>,
         },
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
@@ -93,7 +93,7 @@ const Shipping = ({ showModal }) => {
         {
             title: "Tổng tiền",
             dataIndex: "price",
-            render: (value) => <CurrencyFormat value={value} displayType={'text'} thousandSeparator={true} prefix={'₫ '} />,
+            render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>,
             key: "price"
         },
         {

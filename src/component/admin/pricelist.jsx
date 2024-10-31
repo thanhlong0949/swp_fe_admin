@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Table, Button, Input, Select, Modal, Form, message, Spin } from 'antd';
 import { useEffect } from 'react';
 import api from '../config/axios';
-import Column from 'antd/es/table/Column';
-import CurrencyFormat from 'react-currency-format';
+
+
 
 const { Option } = Select;
 
@@ -24,13 +24,13 @@ const PriceList = ({ showModal}) => {
         { title: 'Phương thức vận chuyển', dataIndex: 'method', key: 'method' },
         { title: 'Cân nặng (Kg)', dataIndex: 'weight', key: 'weight' },
         { title: 'Giao hàng tiết kiệm (VND)', dataIndex: 'ecoPrice', key: 'ecoPrice'
-            ,render: (value) => <span>{<CurrencyFormat value={value} displayType={'text'} thousandSeparator={true}/>} ₫</span>
+            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
          },
         { title: 'Giao hàng nhanh (VND)', dataIndex: 'expPrice', key: 'expPrice'
-            ,render: (value) => <span>{<CurrencyFormat value={value} displayType={'text'} thousandSeparator={true}/>} ₫</span>
+            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
          },
         { title: 'Giao hàng hoả tốc (VND)', dataIndex: 'fastPrice', key: 'fastPrice'
-            ,render: (value) => <span>{<CurrencyFormat value={value} displayType={'text'} thousandSeparator={true}/>} ₫</span>
+            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
          },
         { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
     ];
@@ -39,7 +39,7 @@ const PriceList = ({ showModal}) => {
         { title: 'Mã dịch vụ', dataIndex: 'code', key: 'code' },
         { title: 'Tên dịch vụ', dataIndex: 'name', key: 'name' },
         { title: 'Giá cơ bản (VND)', dataIndex: 'basePrice', key: 'basePrice'
-            ,render: (value) => <span>{<CurrencyFormat value={value} displayType={'text'} thousandSeparator={true}/>} ₫</span>
+            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
          },
         { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
     ];
