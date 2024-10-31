@@ -220,8 +220,8 @@ const Admin = () => {
                                 <BellOutlined style={{ fontSize: '30px' }} />
                             </Badge>
                         </Dropdown>
-                        <Text style={{ margin: '16px 24px' }}>{user.staffName}</Text>
-                        <Select defaultValue={user.language} style={{ width: 120, float: 'right', margin: '16px 24px' }}>
+                        {user && <Text style={{ margin: '16px 24px' }}>{user?.staffName}</Text>}
+                        <Select defaultValue={user?.language} style={{ width: 120, float: 'right', margin: '16px 24px' }}>
                             <Option value="vi"><GlobalOutlined /> Tiếng Việt</Option>
 
                         </Select>
