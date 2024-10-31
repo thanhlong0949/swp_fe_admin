@@ -12,9 +12,11 @@ function LoginAdmin() {
     try {
       const response = await api.post('auth/loginstaff', values);
       const {token} = response.data;
-      const {user} = response.data;
+      const {id} = response.data;
       localStorage.setItem('token', token);
-      // localStorage.setItem('user', user.role);
+      const responseUser = await api.get(`Staff/${id}`);
+      
+      localStorage.setItem('user', JSON.stringify(responseUser.data));
       message.success("Đăng nhập thành công")
       navigate('/admin');
     } catch (error) {

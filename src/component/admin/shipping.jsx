@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Modal, Tag, Form, message, Popconfirm, DatePicker, Col, Row, Typography } from 'antd';
+import { Table, Button, Input, Select, Modal, Tag, Form, message, Popconfirm, DatePicker, Col, Row, Typography, Descriptions, Spin } from 'antd';
 import moment from 'moment';
 import api from '../config/axios';
 import CurrencyFormat from 'react-currency-format';
@@ -8,21 +8,21 @@ import CurrencyFormat from 'react-currency-format';
 const { Option } = Select;
 const { Search } = Input;
 const { Text } = Typography;
+const { RangePicker } = DatePicker;
 const Shipping = ({ showModal }) => {
     const [filterStatus, setFilterStatus] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
     const [filterTime, setFilterTime] = useState('');
     const [shippingList, setShippingList] = useState([]);
     const [isAddShippingModalVisible, setIsAddShippingModalVisible] = useState(false);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [isAddOrderDetailModalVisible, setIsAddOrderDetailModalVisible] = useState(false);
-    const [recordDetail, setRecordDetail] = useState({});
     const [isSelectDay, setIsSelectDay] = useState(false);
     const [shippingDetail, setShippingDetail] = useState({
         staff: [],
         orderDetails: [],
     });
-    const [orderDetailStatus, setOrderDetailStatus] = useState('');
     const [listStaff, setListStaff] = useState([]);
     const [newOrder, setNewOrder] = useState({});
     const [orderDetailList, setOrderDetailList] = useState([]);
@@ -37,10 +37,11 @@ const Shipping = ({ showModal }) => {
         { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (value) => <Text>{value === 'road' ? 'Đường bộ' : 'Đường hàng không'}</Text> },
         { title: 'Điểm xuất phát', dataIndex: 'startPoint', key: 'startPoint' },
         { title: 'Điểm đến', dataIndex: 'endPoint', key: 'endPoint' },
-        { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate', render: (value) => moment(value).format('DD/MM/YYYY')},
-        { title: 'Ngày đến', dataIndex: 'arrivalDate', key: 'arrivalDate', render: (value) => moment(value).format('DD/MM/YYYY')},
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status' , render: (value) => 
-        <Tag color={value === 'Ready' || value === 'Pending' ? 'blue' : value === 'Delivering' ? 'orange' : value === 'Finish' ? 'green' : 'gray'}>{value === 'Ready' || value === 'Pending' ? 'Sẵn sàng'  : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành': ''}</Tag> 
+        { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate', render: (value) => moment(value).format('DD/MM/YYYY') },
+        { title: 'Ngày đến', dataIndex: 'arrivalDate', key: 'arrivalDate', render: (value) => moment(value).format('DD/MM/YYYY') },
+        {
+            title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (value) =>
+                <Tag color={value === 'Ready' || value === 'Pending' ? 'blue' : value === 'Delivering' ? 'orange' : value === 'Finish' ? 'green' : 'gray'}>{value === 'Ready' || value === 'Pending' ? 'Sẵn sàng' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : ''}</Tag>
 
         },
         { title: 'Nhân viên phụ trách', dataIndex: 'employee', key: 'employee' },
@@ -49,7 +50,7 @@ const Shipping = ({ showModal }) => {
             key: 'action',
             render: (record) => <Button onClick={() => showDetailModal(record)}>Chi tiết</Button>,
         },
-       
+
     ];
 
     const columnOrderDetail = [
@@ -67,18 +68,18 @@ const Shipping = ({ showModal }) => {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
             , render: (value, record) =>
                 <Select
-                    value={value} 
+                    defaultValue={value}
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
                     onChange={(newValue) => {
                         record.status = newValue;
-                        console.log(record + " " + value + " " + newValue); 
-                        
+                        console.log(record + " " + value + " " + newValue);
+
                     }}
                 >
-                    
+
                     <Option value="Delivering">Đang vận chuyển</Option>
-                    <Option value="Finish">Hoàn thành</Option>
+                    <Option value="Delivered">Đã giao hàng</Option>
                 </Select>
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
@@ -95,9 +96,10 @@ const Shipping = ({ showModal }) => {
             render: (value) => <CurrencyFormat value={value} displayType={'text'} thousandSeparator={true} prefix={'₫ '} />,
             key: "price"
         },
-        { title: "Trạng thái đơn hàng", dataIndex: "status", key: "status" ,
+        {
+            title: "Trạng thái đơn hàng", dataIndex: "status", key: "status",
             render: (value) => "Chờ lấy hàng"
-         },
+        },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
 
@@ -142,11 +144,15 @@ const Shipping = ({ showModal }) => {
 
     const fetchShippingList = async () => {
         try {
+            setIsLoading(true);
+
             const response = await api.get('/Order');
             setShippingList(response.data);
             console.log("shipping", response.data);
         } catch (error) {
             console.error('Error fetching shipping list:', error.response.data);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -160,7 +166,7 @@ const Shipping = ({ showModal }) => {
                 arrivalDate: moment(newOrder.arrivalDate).format('YYYY-MM-DDTHH:mm:ss'),
                 status: 'Ready',
                 deleteStatus: false,
-                staffIds:[],
+                staffIds: [],
             }
             console.log('order', order);
             const response = await api.post('/Order', order);
@@ -203,24 +209,24 @@ const Shipping = ({ showModal }) => {
     };
 
     const removeStaff = async (staffId) => {
-        console.log('Removing staffId:', staffId); 
-        console.log('Current staff:', shippingDetail.staff); 
+        console.log('Removing staffId:', staffId);
+        console.log('Current staff:', shippingDetail.staff);
 
-        
+
         try {
             const response = await api.delete(`/OrderStaff/delete?orderId=${shippingDetail.tripCode}&staffId=${staffId}`);
             const response2 = await api.get(`/Staff/${staffId}`);
             const response3 = await api.put(`/Staff/${staffId}`, {
                 ...response2.data,
-                    status: 'Active'
-                });
+                status: 'Active'
+            });
             console.log(response.data);
             console.log(response3.data);
             message.success('Xoá nhân viên thành công');
             fetchShippingList();
             setShippingDetail(prev => {
                 const updatedStaff = prev.staff.filter(staff => staff.staffId !== staffId);
-                console.log('Updated staff:', updatedStaff); 
+                console.log('Updated staff:', updatedStaff);
                 return {
                     ...prev,
                     staff: updatedStaff
@@ -229,14 +235,14 @@ const Shipping = ({ showModal }) => {
         } catch (error) {
             console.error('Error deleting staff:', error.response.data);
             message.error('Xoá nhân viên thất bại');
-        }       
+        }
     };
 
 
     const updateOrderDetail = async (record) => {
         console.log('Updating orderDetailId:', record.orderDetailId); // Log the ID to be deleted
         try {
-            
+
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             console.log(response.data);
             message.success('Cập nhật đơn hàng thành công');
@@ -284,7 +290,7 @@ const Shipping = ({ showModal }) => {
         setOrderId(record.tripCode);
         fetchOrderDetailList(record);
         console.log("shippingDetail", shippingDetail);
-        
+
     };
 
     useEffect(() => {
@@ -293,7 +299,7 @@ const Shipping = ({ showModal }) => {
 
     let shipList = [];
     shippingList.forEach(ship => {
-        
+
         shipList.push({
             key: ship.orderId,
             tripCode: ship.orderId,
@@ -310,7 +316,7 @@ const Shipping = ({ showModal }) => {
             orderDetails: ship?.orderDetails,
         });
     });
-   
+
     const updateShipping = async (record) => {
         try {
             const order = {
@@ -323,7 +329,7 @@ const Shipping = ({ showModal }) => {
                 status: record.status,
                 totalWeight: record.totalWeight,
                 deleteStatus: false,
-                
+
 
             }
             console.log(order);
@@ -356,7 +362,7 @@ const Shipping = ({ showModal }) => {
                     status: 'Inactive'
                 });
                 console.log(response3.data);
-                
+
                 message.success('Thêm nhân viên thành công');
                 fetchShippingList();
                 setIsAddStaffModalVisible(false); // Close the modal after adding
@@ -373,6 +379,7 @@ const Shipping = ({ showModal }) => {
 
     return (
         <div>
+            {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Vận chuyển</h1>
                 <Button style={{ width: '200px' }} type="primary" onClick={() => setIsAddShippingModalVisible(true)}>Thêm chuyến mới</Button>
@@ -403,16 +410,16 @@ const Shipping = ({ showModal }) => {
                     <Option value="Finish">Đã giao hàng</Option>
                 </Select>
             </div>
-            <Table 
-                columns={columns} 
+            <Table
+                columns={columns}
                 dataSource={
-                    filterMethod === '' && filterStatus === '' 
-                    ? shipList 
-                    : shipList.filter(ship => 
-                        (filterMethod === '' || ship.method === filterMethod) && 
-                        (filterStatus === '' || ship.status === filterStatus)
-                    )
-                } 
+                    filterMethod === '' && filterStatus === ''
+                        ? shipList
+                        : shipList.filter(ship =>
+                            (filterMethod === '' || ship.method === filterMethod) &&
+                            (filterStatus === '' || ship.status === filterStatus)
+                        )
+                }
             />
             <Modal width={900}
                 title="Chi tiết chuyến vận chuyển"
@@ -423,11 +430,11 @@ const Shipping = ({ showModal }) => {
             >
                 <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} initialValues={shippingDetail}>
                     <Form.Item label="Mã chuyến" name="tripCode">
-                        <Input  disabled />
+                        <Input disabled />
                     </Form.Item>
                     <Form.Item label="Phương thức" name="method">
                         <Select
-                            
+
                             onChange={(value) => setShippingDetail({ ...shippingDetail, method: value })}
                             style={{ width: 200 }}
                         >
@@ -436,33 +443,41 @@ const Shipping = ({ showModal }) => {
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm xuất phát" name="startPoint">
-                        <Input  onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
+                        <Input onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
                     </Form.Item>
                     <Form.Item label="Điểm đến" name="endPoint">
-                        <Input  onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
+                        <Input onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
                     </Form.Item>
+                    {/* <Form.Item>
+                        <RangePicker value={[moment(shippingDetail.departureDate), moment(shippingDetail.arrivalDate ? shippingDetail.arrivalDate : '')]} onChange={(value) =>
+                        {
+                            if (value && value[0] && value[1]) {
+                                setShippingDetail({ ...shippingDetail, departureDate: value[0], arrivalDate: value[1] });
+                            }
+                        }} disabledDate={(current) => current < moment().startOf(moment(shippingDetail.departureDate).format('YYYY-MM-DD'))} />
+                    </Form.Item> */}
                     <Form.Item label="Ngày khởi hành" >
-                        <DatePicker 
+                        <DatePicker
                             value={moment(shippingDetail.departureDate)}
-                            placeholder="Chọn ngày khởi hành" 
-                            onChange={(value) => {
-                                if (value && value.isValid()) { // Validate the date
-                                    setShippingDetail(prev => ({
-                                        ...prev,
-                                        departureDate: value
-                                    }));
-                                    console.log(shippingDetail.departureDate);
+                            format="DD/MM/YYYY"
+                            placeholder="Chọn ngày khởi hành"
+                            onChange={(newValue) => {
+                                if (newValue) {
+                                    console.log('departureDate', moment(shippingDetail.departureDate).format('DD/MM/YYYY'));
+                                    console.log('value', newValue.format('DD/MM/YYYY'));
+                                    setShippingDetail({ departureDate: newValue });
+
                                 } else {
                                     console.error('Invalid departure date');
                                 }
                             }}
-                            disabledDate={(current) => current < moment().startOf('day')} 
+                            disabledDate={(current) => current < moment().startOf('day')}
                         />
                     </Form.Item>
                     <Form.Item label="Ngày đến" >
                         <DatePicker
                             value={moment(shippingDetail.arrivalDate)}
-                            placeholder="Chọn ngày đến" 
+                            placeholder="Chọn ngày đến"
                             onChange={(value) => {
                                 if (value && value.isValid()) { // Validate the date
                                     setShippingDetail(prev => ({
@@ -473,11 +488,11 @@ const Shipping = ({ showModal }) => {
                                 } else {
                                     console.error('Invalid arrival date');
                                 }
-                            }} 
-                            disabledDate={(current) => current < shippingDetail?.departureDate} 
+                            }}
+                            disabledDate={(current) => current < shippingDetail?.departureDate}
                         />
                     </Form.Item>
-                    
+
                     <Form.Item label="Số đơn hàng" >
                         <Input value={orderDetailList?.length} disabled />
                     </Form.Item>
@@ -495,13 +510,28 @@ const Shipping = ({ showModal }) => {
                             <Option value="Finish">Hoàn thành</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item label="Nhân viên phụ trách">
-                        
-                        {shippingDetail.staff?.map(staffs => (
-                            <Tag closable onClose={() => removeStaff(staffs.staffId)}>
-                                {staffs.staffId} - {staffs.staffName}
-                            </Tag>
-                        ))}
+                    <Form.Item >
+                        <Descriptions title="Nhân viên phụ trách">
+                            {shippingDetail.staff?.map((staffs, index) => ( // Add index as a fallback for unique keys
+                                <React.Fragment key={staffs.staffId || index}> {/* Use staffId or index for uniqueness */}
+                                    <Descriptions.Item label={'Nhân viên'}>
+                                        {staffs.staffName}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item>
+                                        <Popconfirm
+                                            onConfirm={() => removeStaff(staffs.staffId)}
+                                            title="Bạn có chắc chắn muốn xoá nhân viên này?"
+                                            okText="Có"
+                                            cancelText="Không"
+                                        >
+                                            <Button style={{ width: '50px' }} danger>Xoá</Button>
+                                        </Popconfirm>
+                                    </Descriptions.Item>
+
+                                </React.Fragment>
+                            ))}
+                        </Descriptions>
+
                         <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} onClick={() => addStaff()}>
                             +
                         </Button>
@@ -512,40 +542,40 @@ const Shipping = ({ showModal }) => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                     <Table
-                        columns={[...columnOrderDetail, 
+                        columns={[...columnOrderDetail,
                         {
                             title: 'Thao tác',
                             render: (record) => (
                                 <div>
                                     <Popconfirm
                                         onConfirm={() => confirm(record)} // Wrap in an arrow function
-                                    onCancel={cancel}
-                                    description="Bạn có chắc chắn muốn xoá đơn hàng này?"
-                                    okText="Có"
-                                    cancelText="Không"
-                                >
+                                        onCancel={cancel}
+                                        description="Bạn có chắc chắn muốn xoá đơn hàng này?"
+                                        okText="Có"
+                                        cancelText="Không"
+                                    >
                                         <Button style={{ width: '50px' }} danger>Xoá</Button>
                                     </Popconfirm>
                                     <Button style={{ marginTop: '10px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button>
                                 </div>
                             ),
-                            
+
                         }]}
                         expandable={{
                             expandedRowRender: (record) => (
-                                
+
                                 <Row gutter={16}>
                                     <Col span={3}>
                                         <Text style={{ fontWeight: 'bold' }}>
                                             <Row>
                                                 <Text>Điểm đi: </Text>
-                                                
+
                                             </Row>
                                             <Row>
                                                 <Text>Điểm đến: </Text>
                                             </Row>
                                         </Text>
-                                        
+
                                     </Col>
                                     <Col span={4}>
                                         <Text>
@@ -561,13 +591,13 @@ const Shipping = ({ showModal }) => {
                                         <Text style={{ fontWeight: 'bold' }}>
                                             <Row>
                                                 <Text>Người nhận: </Text>
-                                                
+
                                             </Row>
                                             <Row>
                                                 <Text>Sdt người nhận: </Text>
                                             </Row>
                                         </Text>
-                                        
+
                                     </Col>
                                     <Col span={4}>
                                         <Text>
@@ -583,27 +613,27 @@ const Shipping = ({ showModal }) => {
                                         <Text style={{ fontWeight: 'bold' }}>
                                             <Row>
                                                 <Text>Vật phẩm đính kèm: </Text>
-                                                
+
                                             </Row>
                                             <Row>
                                                 <Text>Dịch vụ gia tăng: </Text>
                                             </Row>
                                             {record.advancedServiceNames.map(service => (
-                                                    <Row>
-                                                        <Text style={{fontWeight: 'normal'}}> - {service} </Text>
-                                                    </Row>
-                                                ))}
+                                                <Row>
+                                                    <Text style={{ fontWeight: 'normal' }}> - {service} </Text>
+                                                </Row>
+                                            ))}
                                         </Text>
-                                        
+
                                     </Col>
                                     <Col span={4}>
                                         <Text>
                                             <Row>
                                                 <Text>{record.attachedItems ? record.attachedItems : 'Không có'} </Text>
                                             </Row>
-                                            
-                                                
-                                            
+
+
+
                                         </Text>
                                     </Col>
                                 </Row>
@@ -631,7 +661,7 @@ const Shipping = ({ showModal }) => {
                 footer={
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button onClick={() => setIsAddStaffModalVisible(false)} style={{ marginRight: '10px', width: '100px' }}>Đóng</Button>
-                        <Button type="primary" onClick={handleAddStaff} style={{ width: '100px' }}>Thêm</Button> 
+                        <Button type="primary" onClick={handleAddStaff} style={{ width: '100px' }}>Thêm</Button>
                     </div>
                 }
             >
@@ -639,8 +669,8 @@ const Shipping = ({ showModal }) => {
                     mode="multiple"
                     style={{ width: '100%' }}
                     placeholder="Chọn nhân viên"
-                    value={selectedStaffIds} 
-                    onChange={handleStaffChange} 
+                    value={selectedStaffIds}
+                    onChange={handleStaffChange}
                 >
                     {listStaff.map(staff => (
                         !shippingDetail.staff.some(existingStaff => existingStaff.staffId === staff.staffId) ? (
@@ -656,7 +686,7 @@ const Shipping = ({ showModal }) => {
                 open={isAddOrderDetailModalVisible}
                 onCancel={() => setIsAddOrderDetailModalVisible(false)}
                 width={900}
-                
+
                 footer={<Button style={{ width: '100px' }} onClick={() => setIsAddOrderDetailModalVisible(false)}>Đóng</Button>}
             >
                 <Table
@@ -698,30 +728,30 @@ const Shipping = ({ showModal }) => {
                 <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
 
                     <Form.Item label="Phương thức" rules={[{ required: true, message: 'Vui lòng chọn phương thức!' }]}>
-                        <Select placeholder="Chọn phương thức"  onChange={(value) => setNewOrder({ ...newOrder, method: value })}>
+                        <Select placeholder="Chọn phương thức" onChange={(value) => setNewOrder({ ...newOrder, method: value })}>
                             <Option value="road">Đường bộ</Option>
                             <Option value="air">Đường hàng không</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm xuất phát" rules={[{ required: true, message: 'Vui lòng nhập điểm xuất phát!' }]}>
-                        <Input placeholder="Nhập điểm xuất phát"  onChange={(value) => setNewOrder({ ...newOrder, startPoint: value.target.value })} />
+                        <Input placeholder="Nhập điểm xuất phát" onChange={(value) => setNewOrder({ ...newOrder, startPoint: value.target.value })} />
                     </Form.Item>
-                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng nhập điểm đ��n!' }]}>
-                        <Input placeholder="Nhập điểm đến"  onChange={(value) => setNewOrder({ ...newOrder, endPoint: value.target.value })} />
+                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng nhập điểm đến!' }]}>
+                        <Input placeholder="Nhập điểm đến" onChange={(value) => setNewOrder({ ...newOrder, endPoint: value.target.value })} />
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" rules={[{ required: true, message: 'Vui lòng chọn ngày khởi hành!' }]}>
-                        <DatePicker 
-                            placeholder="Chọn ngày khởi hành" 
-                            onChange={(value) => {setNewOrder({ ...newOrder, departureDate: value }); setIsSelectDay(true)}} 
-                            disabledDate={(current) => current < moment().startOf('day')} 
+                        <DatePicker
+                            placeholder="Chọn ngày khởi hành"
+                            onChange={(value) => { setNewOrder({ ...newOrder, departureDate: value }); setIsSelectDay(true) }}
+                            disabledDate={(current) => current < moment().startOf('day')}
                         />
                     </Form.Item>
                     <Form.Item label="Ngày đến" rules={[{ required: true, message: 'Vui lòng chọn ngày đến!' }]}>
                         <DatePicker
-                            
-                            placeholder="Chọn ngày đến" 
-                            onChange={(value) => setNewOrder({ ...newOrder, arrivalDate: value })} 
-                            disabledDate={(current) => current < newOrder?.departureDate} 
+
+                            placeholder="Chọn ngày đến"
+                            onChange={(value) => setNewOrder({ ...newOrder, arrivalDate: value })}
+                            disabledDate={(current) => current < newOrder?.departureDate}
                         />
                     </Form.Item>
 

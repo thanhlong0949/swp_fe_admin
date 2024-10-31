@@ -21,14 +21,10 @@ class SignalRService {
         }
     }
 
-    onOrderDetailCreated() {
+    onOrderDetailCreated(callback) {
         this.connection.on('ReceiveOrderNotification', (message) => {
-            notification.open({
-                message: 'Thông báo',
-                description: message,
-                showProgress: true,
-                pauseOnHover: true,
-            });
+            console.log("Message: ", message);
+            callback(message);
         });
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Input, Select, Modal, Form, message } from 'antd';
+import { Table, Button, Input, Select, Modal, Form, message, Spin } from 'antd';
 import { useEffect } from 'react';
 import api from '../config/axios';
 import Column from 'antd/es/table/Column';
@@ -8,6 +8,7 @@ import CurrencyFormat from 'react-currency-format';
 const { Option } = Select;
 
 const PriceList = ({ showModal}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -50,21 +51,27 @@ const PriceList = ({ showModal}) => {
 
     const fetchPriceList = async () => {
         try {
+            setIsLoading(true);
             const response = await api.get('/Service');
             setPriceList(response.data);
             console.log("PriceList: ", response.data);
         } catch (error) {
             console.error('Error fetching price list:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const fetchAdServiceList = async () => {
         try {
+            setIsLoading(true);
             const response = await api.get('/AdvancedService');
             setAdServiceList(response.data);
             console.log("ADService: ", response.data);
         } catch (error) {
             console.error('Error fetching ad service list:', error.response.data);
+        } finally {
+            setIsLoading(false);
         }
     };
     let serviceList = [];
@@ -229,6 +236,7 @@ const PriceList = ({ showModal}) => {
 
     return (
         <div>
+            {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Quản lý bảng giá</h1>
                 

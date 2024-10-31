@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Input, Select, Modal, Form, Tag, Typography, message } from 'antd';
+import { Table, Button, Input, Select, Modal, Form, Tag, Typography, message, Spin } from 'antd';
 import api from '../config/axios';
 import { useEffect } from 'react';
 import moment from 'moment';
@@ -8,6 +8,7 @@ const { Search } = Input;
 const { Text } = Typography;
 const AccountList = ({}) => {
     const [filterRole, setFilterRole] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [filterJoinDate, setFilterJoinDate] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [accountsList, setAccountsList] = useState([]);
@@ -32,22 +33,29 @@ const AccountList = ({}) => {
 
 
     const fetchAccountStaff = async () => {
+       
         try {
+            setIsLoading(true);
             const response = await api.get('/Staff');
             setStaffList(response.data);
             console.log(response.data);
         } catch (error) {
             console.error('Error fetching accounts list:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const fetchAccountsList = async () => {
+        setIsLoading(true);
         try {
             const response = await api.get('/Customer');
             setAccountsList(response.data);
             console.log(response.data);
         } catch (error) {
             console.error('Error fetching accounts list:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -55,17 +63,19 @@ const AccountList = ({}) => {
     let userList = [];
 
     accountsList.forEach(account => {
-        userList.push({
-            key: account.customerId + account.name,
-            customerId: account.customerId,
-            name: account.name,
-            email: account.email,
-            phone: account.phone,
-            address: account.address,
-            registerDate: account.registrationDate,
-            status: 'Active',
-            role: "customer",
-        });
+        if (account.customerId !== 0) {
+            userList.push({
+                key: account.customerId + account.name,
+                customerId: account.customerId,
+                name: account.name,
+                email: account.email,
+                phone: account.phone,
+                address: account.address,
+                registerDate: account.registrationDate,
+                status: 'Active',
+                role: "customer",
+            });
+        }
     });
 
 
@@ -153,6 +163,7 @@ const AccountList = ({}) => {
 
     return (
         <div>
+            {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Danh sách tài khoản</h1>
                 <Button style={{width: '200px'}} type="primary" onClick={showModal}>Thêm tài khoản mới</Button>
