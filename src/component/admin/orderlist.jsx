@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Modal, message, Tag, Descriptions, Spin, Image } from 'antd';
+import { Table, Button, Input, Select, Modal, message, Tag, Descriptions, Spin, Image, Row, Typography } from 'antd';
 import { StarFilled, StarOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
@@ -7,7 +7,7 @@ import api from '../config/axios';
 import signalrservice from '../signalR/signalrservice';
 const { Search } = Input;
 const { Option } = Select;
-
+const { Text } = Typography;
 const OrderList = ({ showModal }) => {
     const [filterStatus, setFilterStatus] = useState({ name: '', status: '' });
     const [filterTime, setFilterTime] = useState('');
@@ -172,16 +172,16 @@ const OrderList = ({ showModal }) => {
                                 console.log("order: ", order);
                             }
                         })
-                        
+
                     }}
                 />
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
                     onChange={(e) => {
-                        
+
                         setFilterStatus({ status: e });
-                        
+
                     }}
 
                 >
@@ -211,7 +211,7 @@ const OrderList = ({ showModal }) => {
                 render: (text, record) => (
                     record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
-            }]} dataSource={(filterStatus.status === '') ? orderList : 
+            }]} dataSource={(filterStatus.status === '') ? orderList :
                 orderList.filter(order => (order.status === filterStatus.status))
             } />
             <div style={{ width: '80%', maxWidth: '100%' }}>
@@ -247,7 +247,13 @@ const OrderList = ({ showModal }) => {
                         <Descriptions.Item label="Địa chỉ lấy hàng" span={3}>{recordDetail.startLocation}</Descriptions.Item>
                         <Descriptions.Item label="Vật phẩm đi kèm" span={3}>{recordDetail.attachedItem}</Descriptions.Item>
                         <Descriptions.Item label="Địa chỉ giao hàng" span={3}>{recordDetail.destination}</Descriptions.Item>
-                        <Descriptions.Item label="Hình ảnh mô tả" span={6}><Image src={recordDetail.image} width={100} height={100} /></Descriptions.Item>
+                        <Descriptions.Item label="Hình ảnh mô tả" span={6}>
+                            <Row>
+                                {recordDetail.image === null ? <Text>Không có</Text> : recordDetail.image?.split(',').length > 0 ? recordDetail.image?.split(',').map((item, index) => (
+                                    <div key={index}><Image src={item} width={100} height={100} /></div>
+                                )) : <Image src={recordDetail.image} width={100} height={100} />}
+                            </Row>
+                        </Descriptions.Item>
                         {recordDetail.rating === null ? '' :
                             <Descriptions.Item label="Đánh giá" span={3}>
                                 {Array.from({ length: 5 }, (_, index) => (
