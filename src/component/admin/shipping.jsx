@@ -13,7 +13,8 @@ const Shipping = ({ showModal }) => {
     const [filterStatus, setFilterStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
-    const [filterTime, setFilterTime] = useState('');
+    const [status, setStatus] = useState();
+    const [date, setDate] = useState();
     const [shippingList, setShippingList] = useState([]);
     const [isAddShippingModalVisible, setIsAddShippingModalVisible] = useState(false);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -38,7 +39,7 @@ const Shipping = ({ showModal }) => {
         { title: 'Điểm xuất phát', dataIndex: 'startPoint', key: 'startPoint' },
         { title: 'Điểm đến', dataIndex: 'endPoint', key: 'endPoint' },
         { title: 'Ngày khởi hành', dataIndex: 'departureDate', key: 'departureDate', render: (value) => moment(value).format('DD/MM/YYYY') },
-        { title: 'Ngày đến', dataIndex: 'arrivalDate', key: 'arrivalDate', render: (value) => moment(value).format('DD/MM/YYYY') },
+        { title: 'Ngày đến', dataIndex: 'arrivalDate', key: 'arrivalDate', render: (value) => value === null ? 'Chuyến chưa hoàn thành' : moment(value).format('DD/MM/YYYY') },
         {
             title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (value) =>
                 <Tag color={value === 'Ready' || value === 'Pending' ? 'blue' : value === 'Delivering' ? 'orange' : value === 'Finish' ? 'green' : 'gray'}>{value === 'Ready' || value === 'Pending' ? 'Sẵn sàng' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : ''}</Tag>
@@ -68,6 +69,7 @@ const Shipping = ({ showModal }) => {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
             , render: (value, record) =>
                 <Select
+                    disabled={value === 'Finish'}
                     defaultValue={value}
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
@@ -80,6 +82,7 @@ const Shipping = ({ showModal }) => {
 
                     <Option value="Delivering">Đang vận chuyển</Option>
                     <Option value="Delivered">Đã giao hàng</Option>
+                    <Option disabled value="Finish">Hoàn thành</Option>
                 </Select>
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
@@ -184,12 +187,10 @@ const Shipping = ({ showModal }) => {
 
     const addNewOrderDetail = async (selectedRows) => {
         console.log('Selected rows:', selectedRows);
-        setOrderDetailList(prev => [...prev, ...selectedRows]);
-        setAddOrderDetailList([]);
-        setIsAddOrderDetailModalVisible(false);
+        
         try {
             selectedRows.forEach(async (order) => {
-
+                order.status = 'Delivering';
                 const response = await api.get(`/OrderDetail/${order.orderDetailId}`);
                 const orderDetail = response.data;
                 orderDetail.status = 'Delivering';
@@ -199,7 +200,9 @@ const Shipping = ({ showModal }) => {
                 fetchOrderDetailList(shippingDetail);
                 fetchShippingList();
             });
-
+            setOrderDetailList(prev => [...prev, ...selectedRows]);
+            setAddOrderDetailList([]);
+            setIsAddOrderDetailModalVisible(false);
             message.success('Thêm đơn hàng thành công');
 
         } catch (error) {
@@ -287,6 +290,8 @@ const Shipping = ({ showModal }) => {
             ...prev,
             ...record
         }));
+        setStatus(record.status);
+        setDate(record.departureDate);
         setOrderId(record.tripCode);
         fetchOrderDetailList(record);
         console.log("shippingDetail", shippingDetail);
@@ -325,8 +330,8 @@ const Shipping = ({ showModal }) => {
                 destination: record.endPoint,
                 transportMethod: record.method,
                 departureDate: moment(record.departureDate).format('YYYY-MM-DDTHH:mm:ss'),
-                arrivalDate: moment(record.arrivalDate).format('YYYY-MM-DDTHH:mm:ss'),
-                status: record.status,
+                arrivalDate: status === 'Finish' ? moment().startOf('day').format('YYYY-MM-DDTHH:mm:ss') : null,
+                status: status,
                 totalWeight: record.totalWeight,
                 deleteStatus: false,
 
@@ -434,7 +439,7 @@ const Shipping = ({ showModal }) => {
                     </Form.Item>
                     <Form.Item label="Phương thức" name="method">
                         <Select
-
+                            disabled={shippingDetail.status === 'Finish' ? true : false}
                             onChange={(value) => setShippingDetail({ ...shippingDetail, method: value })}
                             style={{ width: 200 }}
                         >
@@ -443,10 +448,10 @@ const Shipping = ({ showModal }) => {
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm xuất phát" name="startPoint">
-                        <Input onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
+                        <Input disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
                     </Form.Item>
                     <Form.Item label="Điểm đến" name="endPoint">
-                        <Input onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
+                        <Input disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
                     </Form.Item>
                     {/* <Form.Item>
                         <RangePicker value={[moment(shippingDetail.departureDate), moment(shippingDetail.arrivalDate ? shippingDetail.arrivalDate : '')]} onChange={(value) =>
@@ -458,15 +463,15 @@ const Shipping = ({ showModal }) => {
                     </Form.Item> */}
                     <Form.Item label="Ngày khởi hành" >
                         <DatePicker
+                            disabled={shippingDetail.status === 'Finish' ? true : false}
                             value={moment(shippingDetail.departureDate)}
                             format="DD/MM/YYYY"
                             placeholder="Chọn ngày khởi hành"
                             onChange={(newValue) => {
                                 if (newValue) {
-                                    console.log('departureDate', moment(shippingDetail.departureDate).format('DD/MM/YYYY'));
-                                    console.log('value', newValue.format('DD/MM/YYYY'));
-                                    setShippingDetail({ departureDate: newValue });
+                                    console.log('newValue', newValue.format('DD/MM/YYYY'));
 
+                                    setShippingDetail({ ...shippingDetail, departureDate: newValue.format('YYYY-MM-DDTHH:mm:ss') });
                                 } else {
                                     console.error('Invalid departure date');
                                 }
@@ -475,22 +480,7 @@ const Shipping = ({ showModal }) => {
                         />
                     </Form.Item>
                     <Form.Item label="Ngày đến" >
-                        <DatePicker
-                            value={moment(shippingDetail.arrivalDate)}
-                            placeholder="Chọn ngày đến"
-                            onChange={(value) => {
-                                if (value && value.isValid()) { // Validate the date
-                                    setShippingDetail(prev => ({
-                                        ...prev,
-                                        arrivalDate: value
-                                    }));
-                                    console.log(shippingDetail.arrivalDate);
-                                } else {
-                                    console.error('Invalid arrival date');
-                                }
-                            }}
-                            disabledDate={(current) => current < shippingDetail?.departureDate}
-                        />
+                        <Text>{shippingDetail.arrivalDate === null ? 'Chuyến chưa hoàn thành' : moment(shippingDetail.arrivalDate).format('DD/MM/YYYY')}</Text>
                     </Form.Item>
 
                     <Form.Item label="Số đơn hàng" >
@@ -501,8 +491,10 @@ const Shipping = ({ showModal }) => {
                     </Form.Item> */}
                     <Form.Item label="Trạng thái">
                         <Select
-                            value={shippingDetail.status === 'Ready' ? 'Sẵn sàng' : shippingDetail.status === 'Delivering' ? 'Đang vận chuyển' : 'Hoàn thành'}
-                            onChange={(value) => setShippingDetail({ ...shippingDetail, status: value })}
+                            disabled={shippingDetail.status === 'Finish' ? true : false}
+                            value={status === 'Ready' ? 'Sẵn sàng' : status === 'Delivering' ? 'Đang vận chuyển' : 'Hoàn thành'}
+                            // onChange={(value) => setShippingDetail({ ...shippingDetail, status: value })}
+                            onChange={(value) => setStatus(value)}
                             style={{ width: 200 }}
                         >
                             <Option value="Ready">Sẵn sàng</Option>
@@ -524,7 +516,7 @@ const Shipping = ({ showModal }) => {
                                             okText="Có"
                                             cancelText="Không"
                                         >
-                                            <Button style={{ width: '50px' }} danger>Xoá</Button>
+                                            <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
                                         </Popconfirm>
                                     </Descriptions.Item>
 
@@ -538,7 +530,7 @@ const Shipping = ({ showModal }) => {
                     </Form.Item>
                 </Form>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                    <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
+                    <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                     <Table
@@ -546,18 +538,21 @@ const Shipping = ({ showModal }) => {
                         {
                             title: 'Thao tác',
                             render: (record) => (
-                                <div>
-                                    <Popconfirm
-                                        onConfirm={() => confirm(record)} // Wrap in an arrow function
-                                        onCancel={cancel}
-                                        description="Bạn có chắc chắn muốn xoá đơn hàng này?"
-                                        okText="Có"
-                                        cancelText="Không"
-                                    >
-                                        <Button style={{ width: '50px' }} danger>Xoá</Button>
-                                    </Popconfirm>
-                                    <Button style={{ marginTop: '10px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button>
-                                </div>
+                                record.status === 'Finish' ? <></> :
+                                    <div>
+
+                                            <Popconfirm
+                                                onConfirm={() => confirm(record)} // Wrap in an arrow function
+                                                onCancel={cancel}
+                                                description="Bạn có chắc chắn muốn xoá đơn hàng này?"
+                                                okText="Có"
+                                                cancelText="Không"
+                                            >
+                                                <Button style={{ width: '50px' }} danger>Xoá</Button>
+                                            </Popconfirm>
+
+                                        <Button style={{ marginTop: '10px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button>
+                                    </div>
                             ),
 
                         }]}
@@ -652,7 +647,7 @@ const Shipping = ({ showModal }) => {
 
                     />
                 </div>
-                <Button style={{ marginTop: '20px', backgroundColor: '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>
+                <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>
             </Modal>
             <Modal
                 title="Chọn nhân viên phụ trách"

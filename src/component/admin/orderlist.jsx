@@ -56,13 +56,13 @@ const OrderList = ({ showModal }) => {
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
-    
+
     useEffect(() => {
         fetchOrdersList();
 
-       
 
-     
+
+
     }, []);
 
 
@@ -161,19 +161,27 @@ const OrderList = ({ showModal }) => {
             <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
                 <Input
+                    value={filterStatus.name}
                     placeholder="Tìm kiếm đơn hàng"
                     style={{ width: 200, marginRight: '10px' }}
                     onChange={(e) => {
                         console.log("e: ", e.target.value);
                         setFilterStatus({ name: e.target.value });
+                        orderList.forEach(order => {
+                            if (order.customerName.toLowerCase().includes(e.target.value.toLowerCase())) {
+                                console.log("order: ", order);
+                            }
+                        })
+                        
                     }}
                 />
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Trạng thái đơn hàng"
                     onChange={(e) => {
-                        console.log("status: ", e);
+                        
                         setFilterStatus({ status: e });
+                        
                     }}
 
                 >
@@ -181,11 +189,15 @@ const OrderList = ({ showModal }) => {
                     <Option value="Pending">Chờ xử lý</Option>
                     <Option value="Waiting">Chờ lấy hàng</Option>
                     <Option value="Delivering">Đang vận chuyển</Option>
+                    <Option value="Delivered">Đã giao hàng</Option>
                     <Option value="Finish">Hoàn thành</Option>
-                    <Option value="Cancel">Đã hủy</Option>
+                    <Option value="Canceled">Đã hủy</Option>
                 </Select>
 
-                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => fetchOrdersList()}>Làm mới</Button>
+                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => {
+                    setFilterStatus({ name: '', status: '' });
+                    fetchOrdersList()
+                }}>Làm mới</Button>
             </div>
             <Table columns={[...columns, {
                 title: 'Thao tác',
@@ -199,12 +211,8 @@ const OrderList = ({ showModal }) => {
                 render: (text, record) => (
                     record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
                 ),
-            }]} dataSource={filterStatus.status === '' && filterStatus.name === ''
-                ? orderList
-                : orderList.filter(order =>
-                    (filterStatus.name === '' || order.customerName.includes(filterStatus.name)) &&
-                    (filterStatus.status === '' || order.status === filterStatus.status)
-                )
+            }]} dataSource={(filterStatus.status === '') ? orderList : 
+                orderList.filter(order => (order.status === filterStatus.status))
             } />
             <div style={{ width: '80%', maxWidth: '100%' }}>
                 <Modal
