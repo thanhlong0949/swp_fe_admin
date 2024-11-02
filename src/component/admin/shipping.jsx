@@ -741,14 +741,14 @@ const Shipping = ({ showModal }) => {
                             disabledDate={(current) => current < moment().startOf('day')}
                         />
                     </Form.Item>
-                    <Form.Item label="Ngày đến" rules={[{ required: true, message: 'Vui lòng chọn ngày đến!' }]}>
+                    {/* <Form.Item label="Ngày đến" rules={[{ required: true, message: 'Vui lòng chọn ngày đến!' }]}>
                         <DatePicker
 
                             placeholder="Chọn ngày đến"
                             onChange={(value) => setNewOrder({ ...newOrder, arrivalDate: value })}
                             disabledDate={(current) => current < newOrder?.departureDate}
                         />
-                    </Form.Item>
+                    </Form.Item> */}
 
                 </Form>
             </Modal>
