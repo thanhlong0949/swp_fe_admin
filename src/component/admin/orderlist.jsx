@@ -120,6 +120,12 @@ const OrderList = ({ showModal }) => {
             const response = await api.put(`/OrderDetail/${orderDetail.orderDetailId}`, orderDetail);
             console.log("OrderDetail updated:", response.data);
             message.success("Cập nhật đơn hàng thành công");
+            const response2 = await api.post('/TrackingOrderD', {
+                orderDetailId: orderDetail.orderDetailId,
+                trackingId : 2,
+            })
+            console.log("TrackingOrderDetail:", response2.data);
+            
             fetchOrdersList();
         } catch (error) {
             console.error('Error updating order detail:', error);

@@ -197,6 +197,11 @@ const Shipping = ({ showModal }) => {
                 orderDetail.orderId = orderId;
                 const response2 = await api.put(`/OrderDetail/${order.orderDetailId}`, orderDetail);
                 console.log(response2.data);
+                const response3 = await api.post('/TrackingOrderD', {
+                    orderDetailId: orderDetail.orderDetailId,
+                    trackingId : 3,
+                })
+                console.log("TrackingOrderDetail:", response3.data);
                 fetchOrderDetailList(shippingDetail);
                 fetchShippingList();
             });
@@ -249,6 +254,11 @@ const Shipping = ({ showModal }) => {
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             console.log(response.data);
             message.success('Cập nhật đơn hàng thành công');
+            const response2 = await api.post('/TrackingOrderD', {
+                orderDetailId: record.orderDetailId,
+                trackingId : record.status === 'Delivered' ? 4 : 3,
+            })
+            console.log("TrackingOrderDetail:", response2.data);
             fetchOrderDetailList(shippingDetail);
         } catch (error) {
             console.error('Error updating order detail:', error.response.data);
