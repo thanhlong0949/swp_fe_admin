@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Row, Col, Card, Statistic, Button, Modal, Form, Input } from 'antd';
+import { Row, Col, Card, Statistic, Button, Modal, Form, Input, DatePicker, Typography } from 'antd';   
 import { Line } from 'react-chartjs-2';
-
+import moment from 'moment';
 const Overview = ({}) => {
     const [isModalVisible, setIsModalVisible] = useState(false);
-
+    const { Text } = Typography;
     const chartData = {
         labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
         datasets: [{
@@ -14,7 +14,9 @@ const Overview = ({}) => {
             tension: 0.1
         }]
     };
-
+    const { RangePicker } = DatePicker;
+    const [fromDate, setFromDate] = useState(null);
+    const [toDate, setToDate] = useState(null);
     const chartOptions = {
         responsive: true,
         scales: {
@@ -37,12 +39,37 @@ const Overview = ({}) => {
         setIsModalVisible(false);
     };
 
+    const handleFilter = () => {
+        console.log(fromDate, toDate);
+    }
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Tổng quan</h1>
                
             </div>
+            <Row style={{marginBottom: '20px'}}>
+                <Col span={3}>
+                <Text>Chọn khoảng thời gian</Text>
+                </Col>
+                <Col span={3}>
+                    <RangePicker
+                        format="DD/MM/YYYY"
+                        onChange={(value) => {
+                            if (value) {
+                                setFromDate(moment(value[0]).format('DD/MM/YYYY'));
+                                setToDate(moment(value[1]).format('DD/MM/YYYY'));
+                            }
+                        }} />
+                </Col>
+                
+                
+                
+                <Col span={2} push={1}>
+                    <Button type="primary" onClick={handleFilter}>Lọc</Button>
+                </Col>
+            </Row>
             <Row gutter={16}>
                 <Col span={6}>
                     <Card>

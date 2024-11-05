@@ -187,7 +187,7 @@ const Shipping = ({ showModal }) => {
 
     const addNewOrderDetail = async (selectedRows) => {
         console.log('Selected rows:', selectedRows);
-        
+
         try {
             selectedRows.forEach(async (order) => {
                 order.status = 'Delivering';
@@ -199,7 +199,7 @@ const Shipping = ({ showModal }) => {
                 console.log(response2.data);
                 const response3 = await api.post('/TrackingOrderD', {
                     orderDetailId: orderDetail.orderDetailId,
-                    trackingId : 3,
+                    trackingId: 3,
                 })
                 console.log("TrackingOrderDetail:", response3.data);
                 fetchOrderDetailList(shippingDetail);
@@ -254,11 +254,19 @@ const Shipping = ({ showModal }) => {
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             console.log(response.data);
             message.success('Cập nhật đơn hàng thành công');
-            const response2 = await api.post('/TrackingOrderD', {
-                orderDetailId: record.orderDetailId,
-                trackingId : record.status === 'Delivered' ? 4 : 3,
-            })
-            console.log("TrackingOrderDetail:", response2.data);
+
+
+            if (record.status === 'Delivering') {
+                const response3 = await api.delete(`/TrackingOrderD/${record.orderDetailId}/4`);
+                console.log("TrackingOrderDetail:", response3.data);
+            } else {
+                const response2 = await api.post('/TrackingOrderD', {
+                    orderDetailId: record.orderDetailId,
+                    trackingId: 4,
+                })
+                console.log("TrackingOrderDetail:", response2.data);
+            }
+
             fetchOrderDetailList(shippingDetail);
         } catch (error) {
             console.error('Error updating order detail:', error.response.data);
@@ -267,11 +275,14 @@ const Shipping = ({ showModal }) => {
     };
     const confirm = async (record) => {
         console.log('Deleting orderDetailId:', record.orderDetailId); // Log the ID to be deleted
+        const status = record.status;
         try {
             record.status = 'Waiting';
             record.orderId = 0;
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             console.log(response.data);
+            const response2 = await api.delete(`/TrackingOrderD/${record.orderDetailId}/3`);
+            console.log("TrackingOrderDetail:", response2.data);
             message.success('Xoá đơn hàng thành công');
             fetchOrderDetailList(shippingDetail);
         } catch (error) {
@@ -551,15 +562,15 @@ const Shipping = ({ showModal }) => {
                                 record.status === 'Finish' ? <></> :
                                     <div>
 
-                                            <Popconfirm
-                                                onConfirm={() => confirm(record)} // Wrap in an arrow function
-                                                onCancel={cancel}
-                                                description="Bạn có chắc chắn muốn xoá đơn hàng này?"
-                                                okText="Có"
-                                                cancelText="Không"
-                                            >
-                                                <Button style={{ width: '50px' }} danger>Xoá</Button>
-                                            </Popconfirm>
+                                        <Popconfirm
+                                            onConfirm={() => confirm(record)} // Wrap in an arrow function
+                                            onCancel={cancel}
+                                            description="Bạn có chắc chắn muốn xoá đơn hàng này?"
+                                            okText="Có"
+                                            cancelText="Không"
+                                        >
+                                            <Button disabled={record.status === 'Delivered' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
+                                        </Popconfirm>
 
                                         <Button style={{ marginTop: '10px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button>
                                     </div>
