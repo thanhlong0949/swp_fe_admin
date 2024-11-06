@@ -202,6 +202,8 @@ const AccountList = ({}) => {
                 open={isDetailModalVisible}
                 onCancel={handleDetailCancel}
                 onOk={handleDetailOk}
+                okText="Cập nhật"
+                cancelText="Hủy"
             >
                 {recordDetail.role === "customer" ? (
                     <>

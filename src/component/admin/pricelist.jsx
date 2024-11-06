@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Table, Button, Input, Select, Modal, Form, message, Spin } from 'antd';
+import { Table, Button, Input, Select, Modal, Form, message, Spin, Tag } from 'antd';
 import { useEffect } from 'react';
 import api from '../config/axios';
 
 
 
 const { Option } = Select;
-
-const PriceList = ({ showModal}) => {
+const { TextArea } = Input;
+const PriceList = ({ showModal }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
@@ -23,25 +23,34 @@ const PriceList = ({ showModal}) => {
         { title: 'Mã dịch vụ', dataIndex: 'code', key: 'code' },
         { title: 'Phương thức vận chuyển', dataIndex: 'method', key: 'method' },
         { title: 'Cân nặng (Kg)', dataIndex: 'weight', key: 'weight' },
-        { title: 'Giao hàng tiết kiệm (VND)', dataIndex: 'ecoPrice', key: 'ecoPrice'
-            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
-         },
-        { title: 'Giao hàng nhanh (VND)', dataIndex: 'expPrice', key: 'expPrice'
-            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
-         },
-        { title: 'Giao hàng hoả tốc (VND)', dataIndex: 'fastPrice', key: 'fastPrice'
-            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
-         },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+        {
+            title: 'Giao hàng tiết kiệm (VND)', dataIndex: 'ecoPrice', key: 'ecoPrice'
+            , render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
+        },
+        {
+            title: 'Giao hàng nhanh (VND)', dataIndex: 'expPrice', key: 'expPrice'
+            , render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
+        },
+        {
+            title: 'Giao hàng hoả tốc (VND)', dataIndex: 'fastPrice', key: 'fastPrice'
+            , render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
+        },
+        { title: 'Trạng thái', dataIndex: 'status', key: 'status' , render: (value) => {
+            return <Tag color={value === 'Đang áp dụng' ? 'green' : 'red'}>{value}</Tag>
+        } },
     ];
 
     const columnsAdService = [
         { title: 'Mã dịch vụ', dataIndex: 'code', key: 'code' },
+        Table.EXPAND_COLUMN,
         { title: 'Tên dịch vụ', dataIndex: 'name', key: 'name' },
-        { title: 'Giá cơ bản (VND)', dataIndex: 'basePrice', key: 'basePrice'
-            ,render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
-         },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+        {
+            title: 'Giá cơ bản (VND)', dataIndex: 'basePrice', key: 'basePrice'
+            , render: (value) => <span>{value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</span>
+        },
+        { title: 'Trạng thái', dataIndex: 'status', key: 'status' , render: (value) => {
+            return <Tag color={value === 'Đang áp dụng' ? 'green' : 'red'}>{value}</Tag>
+        } },
     ];
 
     useEffect(() => {
@@ -79,7 +88,7 @@ const PriceList = ({ showModal}) => {
         serviceList.push({
             key: price.serviceId,
             code: price.serviceId,
-            method: price.transportMethod === "Air" ? "Đường hàng không" : "Đường bộ",
+            method: price.transportMethod === "air" ? "Đường hàng không" : "Đường bộ",
             weight: price.weightRange,
             ecoPrice: parseInt(price.economyDelivery),
             expPrice: parseInt(price.expressDelivery),
@@ -97,6 +106,7 @@ const PriceList = ({ showModal}) => {
             name: adService.aServiceName,
             basePrice: adService.price,
             status: adService.deleteStatus ? 'Ngừng áp dụng' : 'Đang áp dụng',
+            description: adService.description
         });
     });
 
@@ -108,6 +118,7 @@ const PriceList = ({ showModal}) => {
             serviceName: record.name,
             price: record.basePrice,
             deleteStatus: record.status === "Đang áp dụng" ? false : true,
+            description: record.description
         }
         setRecordDetailAdService(recordDetailAdService);
         setIsAdServiceDetailModalVisible(true);
@@ -116,7 +127,7 @@ const PriceList = ({ showModal}) => {
     const handleAdServiceDetailOk = () => {
         setIsAdServiceDetailModalVisible(false);
         updateAdServices(recordDetailAdService);
-        setRecordDetailAdService({...recordDetailAdService, deleteStatus: false});
+        setRecordDetailAdService({ ...recordDetailAdService, deleteStatus: false });
     };
 
     const handleAdServiceDetailCancel = () => {
@@ -152,17 +163,18 @@ const PriceList = ({ showModal}) => {
     const handleAddAdServiceOk = () => {
         setIsAddAdServiceModalVisible(false);
         addAdService(recordDetailAdService);
-        setRecordDetailAdService({...recordDetailAdService, deleteStatus: false});
+        setRecordDetailAdService({ ...recordDetailAdService, deleteStatus: false });
     };
 
 
     const addService = async (recordDetailService) => {
         try {
             const response = await api.post('/Service', recordDetailService);
-            alert("Thêm thành công dịch vụ: " + recordDetailService.serviceId);
+            message.success("Thêm thành công dịch vụ: " + recordDetailService.serviceId);
             console.log("Add service: ", recordDetailService.serviceId);
             fetchPriceList();
         } catch (error) {
+            message.error("Thêm thất bại dịch vụ: " + recordDetailService.serviceId);
             console.error("Error adding service: ", error.response.data);
         }
     };
@@ -173,7 +185,7 @@ const PriceList = ({ showModal}) => {
             const response = await api.post('/AdvancedService', {
                 aServiceName: newAdService.serviceName,
                 price: newAdService.price,
-                
+
             });
             message.success('Thêm dịch vụ gia tăng thành công');
             console.log("Add ad service: ", newAdService.advancedServiceId);
@@ -189,20 +201,21 @@ const PriceList = ({ showModal}) => {
     const handleOk = () => {
         setIsModalVisible(false);
         addService(recordDetail);
-        setRecordDetail({...recordDetail, deleteStatus: false});
+        setRecordDetail({ ...recordDetail, deleteStatus: false });
 
         // Handle form submission logic here
     };
 
     const updateServices = async (recordDetail) => {
-        
+
         try {
-            
-            const response = await api.put(`/Service/${recordDetail.serviceId}`,recordDetail)
-            alert("Cập nhật thành công mã dịch vụ: " + recordDetail.serviceId);
+
+            const response = await api.put(`/Service/${recordDetail.serviceId}`, recordDetail)
+            message.success("Cập nhật thành công mã dịch vụ: " + recordDetail.serviceId);
             console.log("Update service: ", recordDetail.serviceId);
             fetchPriceList();
         } catch (error) {
+            message.error("Cập nhật thất bại mã dịch vụ: " + recordDetail.serviceId);
             console.error("Error updating service: ", error.response.data);
         }
 
@@ -210,19 +223,25 @@ const PriceList = ({ showModal}) => {
 
     const updateAdServices = async (recordDetail) => {
         try {
-            const response = await api.put(`/AdvancedService/${recordDetail.advancedServiceId}`,recordDetail)
-            alert("Cập nhật thành công mã dịch vụ gia tăng: " + recordDetail.advancedServiceId);
+            const response = await api.put(`/AdvancedService/${recordDetail.advancedServiceId}`, {
+                aServiceName: recordDetail.serviceName,
+                price: recordDetail.price,
+                deleteStatus: recordDetail.deleteStatus,
+                description: recordDetail.description
+            })
+            message.success("Cập nhật thành công mã dịch vụ gia tăng: " + recordDetail.advancedServiceId);
             console.log("Update service: ", recordDetail.advancedServiceId);
             fetchAdServiceList();
         } catch (error) {
+            message.error("Cập nhật thất bại mã dịch vụ gia tăng: " + recordDetail.advancedServiceId);
             console.error("Error updating service: ", error.response.data);
         }
     }
     const handleDetailOk = async () => {
         setIsDetailModalVisible(false);
         updateServices(recordDetail);
-        setRecordDetail({...recordDetail, deleteStatus: false});
-        
+        setRecordDetail({ ...recordDetail, deleteStatus: false });
+
     };
 
     const handleDetailCancel = () => {
@@ -239,7 +258,7 @@ const PriceList = ({ showModal}) => {
             {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Quản lý bảng giá</h1>
-                
+
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Select
@@ -264,7 +283,7 @@ const PriceList = ({ showModal}) => {
 
             <h2>Dịch vụ</h2>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-            <Button style={{width: '200px'}} type="primary" onClick={showAddModal}>Thêm bảng giá mới</Button>
+                <Button style={{ width: '200px' }} type="primary" onClick={showAddModal}>Thêm bảng giá mới</Button>
             </div>
             <Table columns={[...columns, {
                 title: 'Thao tác',
@@ -272,20 +291,27 @@ const PriceList = ({ showModal}) => {
                 render: (text, record) => (
                     <Button onClick={() => showDetailModal(record)}>Sửa</Button>
                 ),
-            }]} dataSource={serviceList} />
+            }]} dataSource={filterStatus === '' && filterMethod === '' ? serviceList : filterStatus === '' && filterMethod !== '' ? serviceList.filter(service => service.method === filterMethod) : filterStatus !== '' && filterMethod === '' ? serviceList.filter(service => service.status === filterStatus) : serviceList.filter(service => service.status === filterStatus && service.method === filterMethod)} />
             <h2>Các dịch vụ gia tăng</h2>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-                
-                <Button style={{width: '200px'}} type="primary" onClick={showAddAdServiceModal}>Thêm dịch vụ gia tăng mới</Button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
 
-                </div>
-            
-            <Table columns={[...columnsAdService,{ title: 'Thao tác',
+                <Button style={{ width: '200px' }} type="primary" onClick={showAddAdServiceModal}>Thêm dịch vụ gia tăng mới</Button>
+
+            </div>
+
+            <Table columns={[...columnsAdService, {
+                title: 'Thao tác',
                 key: 'action',
                 render: (text, record) => (
                     <Button onClick={() => showAdServiceDetailModal(record)}>Sửa</Button>
-                ), 
-            }]}dataSource={adServicesList} />
+                ),
+
+            }]} dataSource={filterStatus === '' ? adServicesList : adServicesList.filter(adService => adService.status === filterStatus)}
+                expandable={{
+                    expandedRowRender: (record) => (
+                        <p>{record.description}</p>
+                    )
+                }} />
             <Modal
                 title="Thêm dịch vụ mới"
                 open={isModalVisible}
@@ -295,7 +321,7 @@ const PriceList = ({ showModal}) => {
 
                 <Form layout="vertical">
                     <Form.Item label="Mã bảng giá">
-                        <Input placeholder="Nhập mã bảng giá" onChange={(e) => setRecordDetail({ ...recordDetail, serviceId: e.target.value })}/>
+                        <Input placeholder="Nhập mã bảng giá" onChange={(e) => setRecordDetail({ ...recordDetail, serviceId: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Phương thức vận chuyển">
                         <Select defaultValue={recordDetail.transportMethod} onChange={(value) => setRecordDetail({ ...recordDetail, transportMethod: value })}>
@@ -304,16 +330,16 @@ const PriceList = ({ showModal}) => {
                         </Select>
                     </Form.Item>
                     <Form.Item label="Giao hàng tiết kiệm (VND)">
-                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, economyDelivery: e.target.value })}/>
+                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, economyDelivery: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Giao hàng nhanh (VND)">
-                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, expressDelivery: e.target.value })}/>
+                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, expressDelivery: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Giao hàng hoả tốc (VND)">
-                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, fastDelivery: e.target.value })}/>
+                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetail({ ...recordDetail, fastDelivery: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Cân nặng (Kg)">
-                        <Input placeholder="Nhập cân nặng" onChange={(e) => setRecordDetail({ ...recordDetail, weightRange: e.target.value })}/>
+                        <Input placeholder="Nhập cân nặng" onChange={(e) => setRecordDetail({ ...recordDetail, weightRange: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Trạng thái">
                         <Select>
@@ -326,7 +352,7 @@ const PriceList = ({ showModal}) => {
             <Modal
                 title="Chi tiết bảng giá"
                 open={isDetailModalVisible}
-                
+
                 onOk={handleDetailOk}
                 onCancel={handleDetailCancel}
             >
@@ -339,8 +365,8 @@ const PriceList = ({ showModal}) => {
                     </Form.Item>
                     <Form.Item label="Cân nặng (Kg)">
                         <Input placeholder="Nhập cân nặng"
-                            value={recordDetail.weightRange} 
-                            onChange={(e) =>setRecordDetail({ ...recordDetail, weightRange: e.target.value })} // Update state on change
+                            value={recordDetail.weightRange}
+                            onChange={(e) => setRecordDetail({ ...recordDetail, weightRange: e.target.value })} // Update state on change
                         />
                     </Form.Item>
                     <Form.Item label="Giao hàng tiết kiệm (VND)">
@@ -363,25 +389,30 @@ const PriceList = ({ showModal}) => {
             <Modal
                 title="Chi tiết dịch vụ gia tăng"
                 open={isAdServiceDetailModalVisible}
-                
+
                 onOk={handleAdServiceDetailOk}
                 onCancel={handleAdServiceDetailCancel}
+                okText="Cập nhật"
+                cancelText="Hủy"
             >
                 <Form layout="vertical">
                     <Form.Item label="Mã dịch vụ">
                         <Input disabled value={recordDetailAdService.advancedServiceId} />
                     </Form.Item>
                     <Form.Item label="Tên dịch vụ">
-                        <Input  value={recordDetailAdService.serviceName} onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, serviceName: e.target.value })} />
+                        <Input value={recordDetailAdService.serviceName} onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, serviceName: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Giá cơ bản (VND)">
-                        <Input  value={recordDetailAdService.price} onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, price: e.target.value })} />
+                        <Input value={recordDetailAdService.price} onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, price: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Trạng thái">
                         <Select defaultValue={recordDetailAdService.deleteStatus} onChange={(value) => setRecordDetailAdService({ ...recordDetailAdService, deleteStatus: value })}>
                             <Option value={false}>Đang áp dụng</Option>
                             <Option value={true}>Ngừng áp dụng</Option>
                         </Select>
+                    </Form.Item>
+                    <Form.Item label="Mô tả">
+                        <TextArea value={recordDetailAdService.description} onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, description: e.target.value })} />
                     </Form.Item>
                 </Form>
             </Modal>
@@ -392,16 +423,19 @@ const PriceList = ({ showModal}) => {
                 onCancel={handleAddAdServiceCancel}
             >
                 <Form layout="vertical">
-                    
+
                     <Form.Item label="Tên dịch vụ">
-                        <Input placeholder="Nhập tên dịch vụ" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, serviceName: e.target.value })}/>
+                        <Input placeholder="Nhập tên dịch vụ" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, serviceName: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Giá cơ bản (VND)">
-                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, price: e.target.value })}/>
-                    </Form.Item>    
+                        <Input placeholder="Nhập giá cơ bản" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, price: e.target.value })} />
+                    </Form.Item>
+                    <Form.Item label="Mô tả">
+                        <TextArea placeholder="Nhập mô tả" onChange={(e) => setRecordDetailAdService({ ...recordDetailAdService, description: e.target.value })} />
+                    </Form.Item>
                 </Form>
             </Modal>
-            
+
         </div>
     );
 };
