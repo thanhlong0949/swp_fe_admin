@@ -6,7 +6,7 @@ import moment from 'moment';
 const { Option } = Select;
 const { Search } = Input;
 const { Text } = Typography;
-const AccountList = ({}) => {
+const AccountList = ({ }) => {
     const [form] = Form.useForm();
     const [filterRole, setFilterRole] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +21,25 @@ const AccountList = ({}) => {
         { title: 'Tên', dataIndex: 'name', key: 'name' },
         { title: 'Email', dataIndex: 'email', key: 'email' },
         { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status' , render: (value) => <Tag color={value === "Active" ? "green" : "red"}>{value === "Active" ? "Đang hoạt động" : "Không hoạt động"}</Tag>},
-        { title: 'Vai trò', dataIndex: 'role', key: 'role', render: (value) => <Text>{value === "customer" ? "Khách hàng" : value === "Manager" ? "Quản lý" : value === "Sale Staff" ? "Nhân viên bán hàng" : "Nhân viên giao hàng"}</Text>},
+        { title: 'Trạng thái', dataIndex: 'deleteStatus', key: 'deleteStatus', render: (value, record) => <Tag color={value ? "red" : "green"}>{value ? "Không hoạt động" : "Đang hoạt động"}</Tag> },
+        { title: 'Vai trò', dataIndex: 'role', key: 'role', render: (value) => <Text>{value === "customer" ? "Khách hàng" : value === "Manager" ? "Quản lý" : value === "Sale Staff" ? "Nhân viên bán hàng" : "Nhân viên giao hàng"}</Text> },
 
+        {
+            title: 'Thao tác',
+            key: 'action',
+            render: (value, record) => (
+
+                <Button type="primary" onClick={() => showDetailModal(record)}>Chi tiết</Button>
+
+
+            ),
+        },
+        {
+            key: 'delete',
+            render: (value, record) => (
+                record.deleteStatus ? <Button type="primary" style={{ backgroundColor: 'green' }} onClick={() => restoreAccount(record)}>Khôi phục</Button> : <Button type="primary" style={{ backgroundColor: 'red' }} onClick={() => deleteAccount(record)}>Xoá</Button>
+            ),
+        }
     ];
 
 
@@ -33,9 +49,60 @@ const AccountList = ({}) => {
         fetchAccountStaff();
     }, []);
 
+    const restoreAccount = async (record) => {
+        console.log(record);
+        try {
+            if (record.role === "customer") {
+                let customer = {
+                    name: record.name,
+                    email: record.email,
+                    phone: record.phone,
+                    address: record.address,
+                    registrationDate: record.registerDate,
+                    deleteStatus: false,
 
+                }
+                const response = await api.put(`/Customer/${record.customerId}`, customer);
+                console.log(response);
+            } else {
+                let staff = {
+                    staffName: record.name,
+                    email: record.email,
+                    phone: record.phone,
+                    status: record.status,
+                    deleteStatus: false,
+                }
+                const response = await api.put(`/Staff/${record.staffId}`, staff);
+                console.log(response);
+            }
+            fetchAccountsList();
+            fetchAccountStaff();
+            message.success("Khôi phục tài khoản thành công");
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            message.error("Khôi phục tài khoản thất bại");
+        }
+    }
+    const deleteAccount = async (record) => {
+        console.log(record);
+        try {
+            if (record.role === "customer") {
+                const response = await api.delete(`/Customer/soft/${record.customerId}`);
+                console.log(response);
+            } else {
+                const response = await api.delete(`/Staff/soft/${record.staffId}`);
+                console.log(response);
+            }
+            fetchAccountsList();
+            fetchAccountStaff();
+            message.success("Xoá tài khoản thành công");
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            message.error("Xoá tài khoản thất bại");
+        }
+    }
     const fetchAccountStaff = async () => {
-       
+
         try {
             setIsLoading(true);
             const response = await api.get('/Staff');
@@ -74,7 +141,7 @@ const AccountList = ({}) => {
                 phone: account.phone,
                 address: account.address,
                 registerDate: account.registrationDate,
-                status: 'Active',
+                deleteStatus: account.deleteStatus,
                 role: "customer",
             });
         }
@@ -89,6 +156,7 @@ const AccountList = ({}) => {
             email: staff.email,
             phone: staff.phone,
             status: staff.status,
+            deleteStatus: staff.deleteStatus,
             role: staff.role,
         });
     });
@@ -128,15 +196,16 @@ const AccountList = ({}) => {
 
     const handleCreateStaff = async () => {
 
-        
+
         try {
-            const response = await api.post('/Staff', {...newAccount,
+            const response = await api.post('/Staff', {
+                ...newAccount,
                 status: 'Active',
 
                 password: '12345678',
             });
             console.log(response.data);
-            
+
             message.success('Thêm nhân viên thành công');
             fetchAccountStaff();
             form.resetFields();
@@ -151,7 +220,7 @@ const AccountList = ({}) => {
         }
     };
 
-    
+
 
     const handleDetailOk = async () => {
         setIsDetailModalVisible(false);
@@ -186,7 +255,7 @@ const AccountList = ({}) => {
             {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Danh sách tài khoản</h1>
-                <Button style={{width: '200px'}} type="primary" onClick={showModal}>Thêm nhân viên mới</Button>
+                <Button style={{ width: '200px' }} type="primary" onClick={showModal}>Thêm nhân viên mới</Button>
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Search
@@ -204,18 +273,17 @@ const AccountList = ({}) => {
                     <Option value="Sale Staff">Nhân viên bán hàng</Option>
                     <Option value="Delivering Staff">Nhân viên giao hàng</Option>
                 </Select>
-                
+
             </div>
-            <Table columns={[...columns, {
-                title: 'Thao tác',
-                key: 'action',
-                render: (text, record) => (
-
-                    <Button type="primary" onClick={() => showDetailModal(record)}>Chi tiết</Button>
-
-
-                ),
-            }]} dataSource={filterRole.role === '' ? userList : userList.filter(user => Object.keys(filterRole).every(key => user[key] === filterRole[key]))} />
+            <Table columns={columns} dataSource={filterRole.role === '' ? userList : userList.filter(user => Object.keys(filterRole).every(key => user[key] === filterRole[key]))}
+                expandable={{
+                    rowExpandable: (record) => record.role === "Delivering Staff",
+                    
+                    expandedRowRender: (record) => {
+                        return <Tag style={{width: '100px', display:'flex-end', justifyContent:'center', alignItems:'center', marginLeft: '10px' }} color={record.status === "Active" ? "green" : "red"}>{record.status === "Active" ? "Đang hoạt động" : "Đang giao hàng"}</Tag>
+                    }
+                }}
+            />
 
             <Modal
                 title="Chi tiết tài khoản"
@@ -287,21 +355,21 @@ const AccountList = ({}) => {
                 footer={null}
                 destroyOnClose={true}
             >
-                <Form 
-                layout="vertical" 
-                form={form}
-                onFinish={handleCreateStaff}
-                showRequiredMark={true}
-                clearOnDestroy={true}
+                <Form
+                    layout="vertical"
+                    form={form}
+                    onFinish={handleCreateStaff}
+                    showRequiredMark={true}
+                    clearOnDestroy={true}
                 >
                     <Form.Item label="Tên" rules={[{ required: true, message: 'Tên không được để trống' }]}>
-                        <Input placeholder="Nhập tên" onChange={(e) => setNewAccount({ ...newAccount, staffName: e.target.value })}/>
+                        <Input placeholder="Nhập tên" onChange={(e) => setNewAccount({ ...newAccount, staffName: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ', pattern: /^[^\s@]+@gmail.com/ }]}>
-                        <Input type="email" placeholder="Nhập email" onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}/>
+                        <Input type="email" placeholder="Nhập email" onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })} />
                     </Form.Item>
-                    <Form.Item label="Số điện thoại" rules={[{ required: true, message: 'Số điện thoại không được để trống' , pattern: /^[0-9]{10}$/}]}>
-                        <Input  placeholder="Nhập số điện thoại" type="number" onChange={(e) => setNewAccount({ ...newAccount, phone: e.target.value })}/>
+                    <Form.Item label="Số điện thoại" rules={[{ required: true, message: 'Số điện thoại không được để trống', pattern: /^[0-9]{10}$/ }]}>
+                        <Input placeholder="Nhập số điện thoại" type="number" onChange={(e) => setNewAccount({ ...newAccount, phone: e.target.value })} />
                     </Form.Item>
                     <Form.Item label="Vai trò" rules={[{ required: true, message: 'Vai trò không được để trống' }]}>
                         <Select placeholder="Chọn vai trò" onChange={(value) => setNewAccount({ ...newAccount, role: value })}>
@@ -310,13 +378,13 @@ const AccountList = ({}) => {
                             <Option value="Delivering Staff">Nhân viên giao hàng</Option>
                         </Select>
                     </Form.Item>
-                    <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                         <Form.Item>
                             <Button type="primary" htmlType="submit">Thêm nhân viên</Button>
                         </Form.Item>
-                        
-                            <Button type="primary" style={{backgroundColor: '#f5f5f5', color: 'black'}} onClick={() => { form.resetFields(); setIsModalVisible(false) }}>Hủy</Button>
-                        
+
+                        <Button type="primary" style={{ backgroundColor: '#f5f5f5', color: 'black' }} onClick={() => { form.resetFields(); setIsModalVisible(false) }}>Hủy</Button>
+
                     </div>
                 </Form>
             </Modal>
