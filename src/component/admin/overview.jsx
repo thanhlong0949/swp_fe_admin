@@ -129,7 +129,7 @@ const Overview = () => {
                 
                 <Col span={6}>
                     <Card>
-                        <Statistic title="Tỷ lệ hài lòng" value={data?.satisfactionRate.toFixed(2)} suffix="%" />
+                        <Statistic title="Tỷ lệ hài lòng" value={data?.satisfactionRate} suffix="%" />
                     </Card>
                 </Col>
             </Row>
