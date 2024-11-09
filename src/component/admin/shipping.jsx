@@ -41,7 +41,7 @@ const Shipping = ({ showModal }) => {
     const [orderId, setOrderId] = useState('');
     const columns = [
         { title: 'Mã chuyến', dataIndex: 'tripCode', key: 'tripCode' },
-
+        
         { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (value) => <Text>{value === 'road' ? 'Đường bộ' : 'Đường hàng không'}</Text> },
         { title: 'Điểm xuất phát', dataIndex: 'startPoint', key: 'startPoint' },
         { title: 'Điểm đến', dataIndex: 'endPoint', key: 'endPoint' },
@@ -61,7 +61,14 @@ const Shipping = ({ showModal }) => {
         {
              
             key: 'delete',
-            render: (record) => <Button style={{color: 'red'}} onClick={() => deleteShipping(record)}>Xoá</Button>,
+            render: (record) => {
+                if (record.employee === 0) {
+                    return <Button style={{color: 'red'}} onClick={() => deleteShipping(record)}>Xoá</Button>
+                }
+                return <></>
+            }
+            
+            
         },
 
     ];
@@ -158,10 +165,15 @@ const Shipping = ({ showModal }) => {
     const deleteShipping = async (record) => {
         console.log(record);
         try {
-            const response = await api.delete(`/Order/soft/${record.tripCode}`);
-            console.log(response.data);
-            message.success('Xoá chuyến thành công');
-            fetchShippingList();
+            const resp = await api.get(`/Order/${record.tripCode}`);
+            if (resp.data.orderDetails.length === 0) {      
+                const response = await api.delete(`/Order/soft/${record.tripCode}`);
+                console.log(response.data);
+                message.success('Xoá chuyến thành công');
+                fetchShippingList();
+            } else {
+                message.error('Chuyến đang có đơn hàng');
+            }
         } catch (error) {
             console.error('Error deleting shipping:', error.response.data);
             message.error('Xoá chuyến thất bại');
