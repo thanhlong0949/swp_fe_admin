@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import './login.css';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message, Spin } from 'antd';
 import api from '../component/config/axios.jsx';
 
 function LoginAdmin() {
   const navigate = useNavigate(); 
   const [loginError, setLoginError] = useState(null);
-
+  const [loading, setLoading] = useState(false);
   const onFinish = async (values) => {
+    setLoading(true);
     try {
       const response = await api.post('auth/loginstaff', values);
       const {token} = response.data;
@@ -23,6 +24,8 @@ function LoginAdmin() {
       console.error('Error during login:', error.response ? error.response.data : error.message);
       setLoginError('Tài khoản hoặc mật khẩu không đúng!'); // Display a user-friendly error message
       message.error('Tài khoản hoặc mật khẩu không đúng!');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,7 +35,7 @@ function LoginAdmin() {
         <img src="/assets/logo.jpg" alt="Logo" className="logo" />
         <h2>KOI Shipping ADMIN</h2>
         <h3>Đăng Nhập</h3>
-
+        {loading && <Spin size="large" />}
         <Form
           name="login"
           labelCol={{ span: 24 }}

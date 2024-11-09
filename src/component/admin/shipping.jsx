@@ -10,6 +10,7 @@ const { Search } = Input;
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 const Shipping = ({ showModal }) => {
+    
     const [filterStatus, setFilterStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
@@ -25,7 +26,13 @@ const Shipping = ({ showModal }) => {
         orderDetails: [],
     });
     const [listStaff, setListStaff] = useState([]);
-    const [newOrder, setNewOrder] = useState({});
+    const [newOrder, setNewOrder] = useState({
+        method: undefined,
+        startPoint: undefined,
+        endPoint: undefined,
+        departureDate: null,
+    });
+    const [form] = Form.useForm();
     const [orderDetailList, setOrderDetailList] = useState([]);
     const [addOrderDetailList, setAddOrderDetailList] = useState([]);
     const [isAddStaffModalVisible, setIsAddStaffModalVisible] = useState(false);
@@ -50,6 +57,11 @@ const Shipping = ({ showModal }) => {
             title: 'Thao tác',
             key: 'action',
             render: (record) => <Button onClick={() => showDetailModal(record)}>Chi tiết</Button>,
+        },
+        {
+             
+            key: 'delete',
+            render: (record) => <Button style={{color: 'red'}} onClick={() => deleteShipping(record)}>Xoá</Button>,
         },
 
     ];
@@ -143,7 +155,18 @@ const Shipping = ({ showModal }) => {
     });
 
 
-
+    const deleteShipping = async (record) => {
+        console.log(record);
+        try {
+            const response = await api.delete(`/Order/soft/${record.tripCode}`);
+            console.log(response.data);
+            message.success('Xoá chuyến thành công');
+            fetchShippingList();
+        } catch (error) {
+            console.error('Error deleting shipping:', error.response.data);
+            message.error('Xoá chuyến thất bại');
+        }
+    }
 
     const fetchShippingList = async () => {
         try {
@@ -165,8 +188,8 @@ const Shipping = ({ showModal }) => {
                 startLocation: newOrder.startPoint,
                 destination: newOrder.endPoint,
                 transportMethod: newOrder.method,
-                departureDate: moment(newOrder.departureDate).format('YYYY-MM-DDTHH:mm:ss'),
-                arrivalDate: moment(newOrder.arrivalDate).format('YYYY-MM-DDTHH:mm:ss'),
+                departureDate: newOrder.departureDate.format('YYYY-MM-DDTHH:mm:ss'),
+                arrivalDate: null,
                 status: 'Ready',
                 deleteStatus: false,
                 staffIds: [],
@@ -177,8 +200,16 @@ const Shipping = ({ showModal }) => {
             message.success('Thêm chuyến thành công');
             fetchShippingList();
             setIsAddShippingModalVisible(false);
-            setNewOrder({});
+            setNewOrder({
+                ...newOrder,
+                startPoint: undefined,
+                endPoint: undefined,
+                method: undefined,
+                departureDate: null,
+            });
+            form.resetFields();
             setIsSelectDay(false);
+            
         } catch (error) {
             console.error('Error adding shipping:', error.response.data);
             message.error('Thêm chuyến thất bại');
@@ -216,35 +247,7 @@ const Shipping = ({ showModal }) => {
         }
     };
 
-    const removeStaff = async (staffId) => {
-        console.log('Removing staffId:', staffId);
-        console.log('Current staff:', shippingDetail.staff);
 
-
-        try {
-            const response = await api.delete(`/OrderStaff/delete?orderId=${shippingDetail.tripCode}&staffId=${staffId}`);
-            const response2 = await api.get(`/Staff/${staffId}`);
-            const response3 = await api.put(`/Staff/${staffId}`, {
-                ...response2.data,
-                status: 'Active'
-            });
-            console.log(response.data);
-            console.log(response3.data);
-            message.success('Xoá nhân viên thành công');
-            fetchShippingList();
-            setShippingDetail(prev => {
-                const updatedStaff = prev.staff.filter(staff => staff.staffId !== staffId);
-                console.log('Updated staff:', updatedStaff);
-                return {
-                    ...prev,
-                    staff: updatedStaff
-                };
-            });
-        } catch (error) {
-            console.error('Error deleting staff:', error.response.data);
-            message.error('Xoá nhân viên thất bại');
-        }
-    };
 
 
     const updateOrderDetail = async (record) => {
@@ -309,20 +312,29 @@ const Shipping = ({ showModal }) => {
         setIsDetailModalVisible(true);
         setShippingDetail(prev => ({
             ...prev,
-            ...record
+            tripCode: record.tripCode,
+            startPoint: record.startPoint,
+            endPoint: record.endPoint,
+            method: record.method,
+            departureDate: record.departureDate,
+            arrivalDate: record.arrivalDate,
+            status: record.status,
+            staff: record.staff,
         }));
         setStatus(record.status);
         setDate(record.departureDate);
         setOrderId(record.tripCode);
         fetchOrderDetailList(record);
-        console.log("shippingDetail", shippingDetail);
+
 
     };
 
     useEffect(() => {
         fetchShippingList();
     }, []);
-
+    useEffect(() => {
+        
+    }, [shippingDetail, newOrder]);
     let shipList = [];
     shippingList.forEach(ship => {
 
@@ -373,16 +385,52 @@ const Shipping = ({ showModal }) => {
         setSelectedStaffIds(value); // Update selected staff IDs
     };
 
+    const removeStaff = async (staffId) => {
+        console.log('Removing staffId:', staffId);
+        console.log('Current staff:', shippingDetail.staff);
+
+
+        try {
+            const response = await api.delete(`/OrderStaff/delete?orderId=${shippingDetail.tripCode}&staffId=${staffId}`);
+            const response2 = await api.get(`/Staff/${staffId}`);
+            const response3 = await api.put(`/Staff/${staffId}`, {
+                ...response2.data,
+                status: 'Active'
+            });
+            console.log(response.data);
+            console.log(response3.data);
+            message.success('Xoá nhân viên thành công');
+            fetchShippingList();
+            setShippingDetail(prev => {
+                const updatedStaff = prev.staff.filter(staff => staff.staffId !== staffId);
+                console.log('Updated staff:', updatedStaff);
+                return {
+                    ...prev,
+                    staff: updatedStaff
+                };
+            });
+        } catch (error) {
+            console.error('Error deleting staff:', error.response.data);
+            message.error('Xoá nhân viên thất bại');
+        }
+    };
+
     const handleAddStaff = async () => {
         console.log('Selected Staff IDs:', selectedStaffIds); // Log the selected staff IDs
+      
+        console.log('Current staff:', shippingDetail.staff);
         try {
             selectedStaffIds.forEach(async (staffId) => {
-                shippingDetail.staff.push(staffId);
+                
                 const response = await api.post('/OrderStaff', {
                     orderId: shippingDetail.tripCode,
                     staffId: staffId
                 });
                 const response2 = await api.get(`/Staff/${staffId}`);
+                shippingDetail.staff.push({
+                    staffId: staffId,
+                    staffName: response2.data.staffName,
+                });
                 const response3 = await api.put(`/Staff/${staffId}`, {
                     ...response2.data,
                     status: 'Inactive'
@@ -454,12 +502,13 @@ const Shipping = ({ showModal }) => {
 
                 footer={<Button style={{ width: '100px' }} onClick={() => setIsDetailModalVisible(false)}>Đóng</Button>}
             >
-                <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }} initialValues={shippingDetail}>
-                    <Form.Item label="Mã chuyến" name="tripCode">
-                        <Input disabled />
+                <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <Form.Item label="Mã chuyến">
+                        <Input disabled value={shippingDetail.tripCode} />
                     </Form.Item>
-                    <Form.Item label="Phương thức" name="method">
+                    <Form.Item label="Phương thức">
                         <Select
+                            value={shippingDetail.method}
                             disabled={shippingDetail.status === 'Finish' ? true : false}
                             onChange={(value) => setShippingDetail({ ...shippingDetail, method: value })}
                             style={{ width: 200 }}
@@ -468,20 +517,20 @@ const Shipping = ({ showModal }) => {
                             <Option value="air">Đường hàng không</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item label="Điểm xuất phát" name="startPoint">
-                        <Input disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value.target.value })} />
+                    <Form.Item label="Điểm xuất phát">
+                        <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value })} value={shippingDetail.startPoint}>
+                            <Option value="Huế">Huế</Option>
+                            <Option value="HCM">HCM</Option>
+                            <Option value="HN">HN</Option>
+                        </Select>
                     </Form.Item>
-                    <Form.Item label="Điểm đến" name="endPoint">
-                        <Input disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value.target.value })} />
+                    <Form.Item label="Điểm đến" >
+                        <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value })} value={shippingDetail.endPoint}>
+                            <Option value="Huế">Huế</Option>
+                            <Option value="HCM">HCM</Option>
+                            <Option value="HN">HN</Option>
+                        </Select>
                     </Form.Item>
-                    {/* <Form.Item>
-                        <RangePicker value={[moment(shippingDetail.departureDate), moment(shippingDetail.arrivalDate ? shippingDetail.arrivalDate : '')]} onChange={(value) =>
-                        {
-                            if (value && value[0] && value[1]) {
-                                setShippingDetail({ ...shippingDetail, departureDate: value[0], arrivalDate: value[1] });
-                            }
-                        }} disabledDate={(current) => current < moment().startOf(moment(shippingDetail.departureDate).format('YYYY-MM-DD'))} />
-                    </Form.Item> */}
                     <Form.Item label="Ngày khởi hành" >
                         <DatePicker
                             disabled={shippingDetail.status === 'Finish' ? true : false}
@@ -526,7 +575,7 @@ const Shipping = ({ showModal }) => {
                     <Form.Item >
                         <Descriptions title="Nhân viên phụ trách">
                             {shippingDetail.staff?.map((staffs, index) => ( // Add index as a fallback for unique keys
-                                <React.Fragment key={staffs.staffId || index}> {/* Use staffId or index for uniqueness */}
+                                <React.Fragment key={index}> {/* Use staffId or index for uniqueness */}
                                     <Descriptions.Item label={'Nhân viên'}>
                                         {staffs.staffName}
                                     </Descriptions.Item>
@@ -730,49 +779,66 @@ const Shipping = ({ showModal }) => {
                 />
 
             </Modal>
+            
+
+      
             <Modal
                 title="Thêm chuyến vận chuyển mới"
                 open={isAddShippingModalVisible}
-                onCancel={() => setIsAddShippingModalVisible(false)}
-                footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button onClick={() => setIsAddShippingModalVisible(false)} style={{ marginRight: '10px', width: '100px' }}>Đóng</Button>
-                        <Button type="primary" onClick={handleAddShipping} style={{ width: '100px' }}>Thêm</Button>
-                    </div>
-                }
+                footer={null}
+                width={900}
+                destroyOnClose={true}
             >
-                <Form layout="vertical" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-
+                <Form
+                    form={form}
+                    labelCol={{ span: 7 }}
+                    wrapperCol={{ span: 24 }}
+                    clearOnDestroy={true}
+                    layout="horizontal"
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}
+                    onFinish={handleAddShipping} // Add this line
+                >
                     <Form.Item label="Phương thức" rules={[{ required: true, message: 'Vui lòng chọn phương thức!' }]}>
                         <Select placeholder="Chọn phương thức" onChange={(value) => setNewOrder({ ...newOrder, method: value })}>
                             <Option value="road">Đường bộ</Option>
                             <Option value="air">Đường hàng không</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item label="Điểm xuất phát" rules={[{ required: true, message: 'Vui lòng nhập điểm xuất phát!' }]}>
-                        <Input placeholder="Nhập điểm xuất phát" onChange={(value) => setNewOrder({ ...newOrder, startPoint: value.target.value })} />
+                    <Form.Item label="Điểm xuất phát" rules={[{ required: true, message: 'Vui lòng chọn điểm xuất phát!' }]}>
+                        <Select placeholder="Chọn điểm xuất phát" onChange={(value) => setNewOrder({ ...newOrder, startPoint: value })}>
+                            <Option value="Huế">Huế</Option>
+                            <Option value="HCM">HCM</Option>
+                            <Option value="HN">HN</Option>
+                        </Select>
                     </Form.Item>
-                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng nhập điểm đến!' }]}>
-                        <Input placeholder="Nhập điểm đến" onChange={(value) => setNewOrder({ ...newOrder, endPoint: value.target.value })} />
+                    <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng chọn điểm đến!' }]}>
+                        <Select placeholder="Chọn điểm đến" onChange={(value) => setNewOrder({ ...newOrder, endPoint: value })}>
+                            <Option value="Huế">Huế</Option>
+                            <Option value="HCM">HCM</Option>
+                            <Option value="HN">HN</Option>
+                        </Select>
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" rules={[{ required: true, message: 'Vui lòng chọn ngày khởi hành!' }]}>
                         <DatePicker
+                            format="DD/MM/YYYY"
                             placeholder="Chọn ngày khởi hành"
                             onChange={(value) => { setNewOrder({ ...newOrder, departureDate: value }); setIsSelectDay(true) }}
                             disabledDate={(current) => current < moment().startOf('day')}
                         />
                     </Form.Item>
-                    {/* <Form.Item label="Ngày đến" rules={[{ required: true, message: 'Vui lòng chọn ngày đến!' }]}>
-                        <DatePicker
-
-                            placeholder="Chọn ngày đến"
-                            onChange={(value) => setNewOrder({ ...newOrder, arrivalDate: value })}
-                            disabledDate={(current) => current < newOrder?.departureDate}
-                        />
-                    </Form.Item> */}
+                   
+                    <div style={{ display: 'flex' }}>
+                        <Button onClick={() => { form.resetFields(); setIsAddShippingModalVisible(false) }} style={{ marginRight: '10px', width: '100px' }}>Đóng</Button>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit" style={{ width: '100px' }}>Thêm</Button> {/* Change to htmlType="submit" */}
+                        </Form.Item>
+                        
+                    </div>
 
                 </Form>
             </Modal>
+
+
         </div>
     );
 };

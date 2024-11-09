@@ -7,6 +7,7 @@ const { Option } = Select;
 const { Search } = Input;
 const { Text } = Typography;
 const AccountList = ({}) => {
+    const [form] = Form.useForm();
     const [filterRole, setFilterRole] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterJoinDate, setFilterJoinDate] = useState('');
@@ -15,6 +16,7 @@ const AccountList = ({}) => {
     const [staffList, setStaffList] = useState([]);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [recordDetail, setRecordDetail] = useState({});
+    const [newAccount, setNewAccount] = useState({});
     const columns = [
         { title: 'Tên', dataIndex: 'name', key: 'name' },
         { title: 'Email', dataIndex: 'email', key: 'email' },
@@ -124,14 +126,32 @@ const AccountList = ({}) => {
         }
     };
 
-    const handleOk = () => {
-        setIsModalVisible(false);
-        // Handle form submission logic here
+    const handleCreateStaff = async () => {
+
+        
+        try {
+            const response = await api.post('/Staff', {...newAccount,
+                status: 'Active',
+
+                password: '12345678',
+            });
+            console.log(response.data);
+            
+            message.success('Thêm nhân viên thành công');
+            fetchAccountStaff();
+            form.resetFields();
+            setIsModalVisible(false);
+        } catch (error) {
+            if (error.response.data.message.includes("already exists")) {
+                message.error('Email đã tồn tại');
+            } else {
+                message.error('Thêm nhân viên thất bại');
+            }
+            console.error('Error creating staff:', error.response.data);
+        }
     };
 
-    const handleCancel = () => {
-        setIsModalVisible(false);
-    };
+    
 
     const handleDetailOk = async () => {
         setIsDetailModalVisible(false);
@@ -166,7 +186,7 @@ const AccountList = ({}) => {
             {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Danh sách tài khoản</h1>
-                <Button style={{width: '200px'}} type="primary" onClick={showModal}>Thêm tài khoản mới</Button>
+                <Button style={{width: '200px'}} type="primary" onClick={showModal}>Thêm nhân viên mới</Button>
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Search
@@ -262,28 +282,42 @@ const AccountList = ({}) => {
                 )}
             </Modal>
             <Modal
-                title="Thêm tài khoản mới"
+                title="Thêm nhân viên mới"
                 open={isModalVisible}
-                onOk={handleOk}
-                onCancel={handleCancel}
+                footer={null}
+                destroyOnClose={true}
             >
-                <Form layout="vertical">
-                    <Form.Item label="Tên">
-                        <Input />
+                <Form 
+                layout="vertical" 
+                form={form}
+                onFinish={handleCreateStaff}
+                showRequiredMark={true}
+                clearOnDestroy={true}
+                >
+                    <Form.Item label="Tên" rules={[{ required: true, message: 'Tên không được để trống' }]}>
+                        <Input placeholder="Nhập tên" onChange={(e) => setNewAccount({ ...newAccount, staffName: e.target.value })}/>
                     </Form.Item>
-                    <Form.Item label="Email">
-                        <Input />
+                    <Form.Item label="Email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ', pattern: /^[^\s@]+@gmail.com/ }]}>
+                        <Input type="email" placeholder="Nhập email" onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}/>
                     </Form.Item>
-                    <Form.Item label="Địa chỉ">
-                        <Input />
+                    <Form.Item label="Số điện thoại" rules={[{ required: true, message: 'Số điện thoại không được để trống' , pattern: /^[0-9]{10}$/}]}>
+                        <Input  placeholder="Nhập số điện thoại" type="number" onChange={(e) => setNewAccount({ ...newAccount, phone: e.target.value })}/>
                     </Form.Item>
-                    <Form.Item label="Vai trò">
-                        <Select>
+                    <Form.Item label="Vai trò" rules={[{ required: true, message: 'Vai trò không được để trống' }]}>
+                        <Select placeholder="Chọn vai trò" onChange={(value) => setNewAccount({ ...newAccount, role: value })}>
                             <Option value="Manager">Quản lý</Option>
                             <Option value="Sale Staff">Nhân viên bán hàng</Option>
                             <Option value="Delivering Staff">Nhân viên giao hàng</Option>
                         </Select>
                     </Form.Item>
+                    <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit">Thêm nhân viên</Button>
+                        </Form.Item>
+                        
+                            <Button type="primary" style={{backgroundColor: '#f5f5f5', color: 'black'}} onClick={() => { form.resetFields(); setIsModalVisible(false) }}>Hủy</Button>
+                        
+                    </div>
                 </Form>
             </Modal>
         </div>
