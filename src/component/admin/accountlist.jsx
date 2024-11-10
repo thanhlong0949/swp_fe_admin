@@ -3,20 +3,22 @@ import { Table, Button, Input, Select, Modal, Form, Tag, Typography, message, Sp
 import api from '../config/axios';
 import { useEffect } from 'react';
 import moment from 'moment';
-const { Option } = Select;
-const { Search } = Input;
-const { Text } = Typography;
+
 const AccountList = ({ }) => {
+    const { Option } = Select;
+    const { Search } = Input;
+    const { Text } = Typography;
     const [form] = Form.useForm();
+    const [filterName, setFilterName] = useState('');
     const [filterRole, setFilterRole] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [filterJoinDate, setFilterJoinDate] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [accountsList, setAccountsList] = useState([]);
     const [staffList, setStaffList] = useState([]);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [recordDetail, setRecordDetail] = useState({});
     const [newAccount, setNewAccount] = useState({});
+
     const columns = [
         { title: 'Tên', dataIndex: 'name', key: 'name' },
         { title: 'Email', dataIndex: 'email', key: 'email' },
@@ -37,7 +39,9 @@ const AccountList = ({ }) => {
         {
             key: 'delete',
             render: (value, record) => (
-                record.deleteStatus ? <Button type="primary" style={{ backgroundColor: 'green' }} onClick={() => restoreAccount(record)}>Khôi phục</Button> : <Button type="primary" style={{ backgroundColor: 'red' }} onClick={() => deleteAccount(record)}>Xoá</Button>
+                record.deleteStatus 
+                ? <Button type="primary" style={{ backgroundColor: 'green' }} onClick={() => restoreAccount(record)}>Khôi phục</Button> 
+                : <Button type="primary" style={{ backgroundColor: 'red' }} onClick={() => deleteAccount(record)}>Xoá</Button>
             ),
         }
     ];
@@ -179,6 +183,7 @@ const AccountList = ({ }) => {
                 role: record.role,
                 address: record.address,
                 registerDate: record.registerDate,
+                deleteStatus: record.deleteStatus,
             }
             setRecordDetail(recordDetail);
         } else {
@@ -189,6 +194,7 @@ const AccountList = ({ }) => {
                 phone: record.phone,
                 status: record.status,
                 role: record.role,
+                deleteStatus: record.deleteStatus,
             }
             setRecordDetail(recordDetail);
         }
@@ -259,13 +265,21 @@ const AccountList = ({ }) => {
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Search
-                    placeholder="Tìm kiếm tài khoản"
+                    placeholder="Tìm kiếm theo tên tài khoản"
                     style={{ width: 200, marginRight: '10px' }}
+                    onChange={(e) => {
+                        setFilterName(e.target.value)
+                        console.log('role:', filterRole + 'name:', filterName);
+                    }}
                 />
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Vai trò"
-                    onChange={(e) => setFilterRole({ role: e })}
+                    defaultValue=""
+                    onChange={(e) => {
+                        setFilterRole(e)
+                        console.log('role:', filterRole + 'name:', filterName);
+                    }}
                 >
                     <Option value="">Tất cả vai trò</Option>
                     <Option value="customer">Khách hàng</Option>
@@ -275,12 +289,15 @@ const AccountList = ({ }) => {
                 </Select>
 
             </div>
-            <Table columns={columns} dataSource={filterRole.role === '' ? userList : userList.filter(user => Object.keys(filterRole).every(key => user[key] === filterRole[key]))}
+            <Table columns={columns} dataSource={userList.filter(user =>
+                    (filterName === '' || user.name.toLowerCase().includes(filterName.toLowerCase())) &&
+                    (filterRole === '' || user.role === filterRole))
+            }
                 expandable={{
                     rowExpandable: (record) => record.role === "Delivering Staff",
-                    
+
                     expandedRowRender: (record) => {
-                        return <Tag style={{width: '100px', display:'flex-end', justifyContent:'center', alignItems:'center', marginLeft: '10px' }} color={record.status === "Active" ? "green" : "red"}>{record.status === "Active" ? "Đang hoạt động" : "Đang giao hàng"}</Tag>
+                        return <Tag style={{ width: '100px', display: 'flex-end', justifyContent: 'center', alignItems: 'center', marginLeft: '10px' }} color={record.status === "Active" ? "green" : "red"}>{record.status === "Active" ? "Đang hoạt động" : "Đang giao hàng"}</Tag>
                     }
                 }}
             />
@@ -306,7 +323,7 @@ const AccountList = ({ }) => {
                                 <Input value={recordDetail.phone} disabled />
                             </Form.Item>
                             <Form.Item label="Trạng thái">
-                                <Input value={recordDetail.status === "Active" ? "Đang hoạt động" : "Không hoạt động"} disabled />
+                                <Input value={recordDetail.deleteStatus === false ? "Đang hoạt động" : "Không hoạt động"} disabled />
                             </Form.Item>
                             <Form.Item label="Vai trò">
                                 <Input value={"Khách hàng"} disabled />
@@ -332,10 +349,7 @@ const AccountList = ({ }) => {
                                 <Input value={recordDetail.phone} onChange={(e) => setRecordDetail({ ...recordDetail, phone: e.target.value })} />
                             </Form.Item>
                             <Form.Item label="Trạng thái">
-                                <Select value={recordDetail.status} onChange={(value) => setRecordDetail({ ...recordDetail, status: value })}>
-                                    <Option value="Active">Đang hoạt động</Option>
-                                    <Option value="Inactive">Không hoạt động</Option>
-                                </Select>
+                                <Text>{recordDetail.deleteStatus === false ? "Đang hoạt động" : "Không hoạt động"}</Text>
                             </Form.Item>
                             <Form.Item label="Vai trò">
                                 <Select value={recordDetail.role} onChange={(value) => setRecordDetail({ ...recordDetail, role: value })}>

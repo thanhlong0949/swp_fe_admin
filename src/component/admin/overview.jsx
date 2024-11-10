@@ -3,7 +3,7 @@ import { Row, Col, Card, Statistic, Button,  DatePicker, Typography, Spin } from
 import { Line } from 'react-chartjs-2';
 import moment from 'moment';
 import api from '../config/axios';
-import dayjs from 'dayjs';
+
 const Overview = () => {
     const { Text } = Typography;
     
@@ -129,7 +129,7 @@ const Overview = () => {
                 
                 <Col span={6}>
                     <Card>
-                        <Statistic title="Tỷ lệ hài lòng" value={data?.satisfactionRate} suffix="%" />
+                        <Statistic title="Tỷ lệ hài lòng" value={data?.satisfactionRate?.toFixed(2)} suffix="%" />
                     </Card>
                 </Col>
             </Row>

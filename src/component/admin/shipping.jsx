@@ -10,10 +10,12 @@ const { Search } = Input;
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 const Shipping = ({ showModal }) => {
-    
+
     const [filterStatus, setFilterStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
+    const [filterDestination, setFilterDestination] = useState('');
+    const [filterStartPoint, setFilterStartPoint] = useState('');
     const [status, setStatus] = useState();
     const [date, setDate] = useState();
     const [shippingList, setShippingList] = useState([]);
@@ -41,7 +43,7 @@ const Shipping = ({ showModal }) => {
     const [orderId, setOrderId] = useState('');
     const columns = [
         { title: 'Mã chuyến', dataIndex: 'tripCode', key: 'tripCode' },
-        
+
         { title: 'Phương thức', dataIndex: 'method', key: 'method', render: (value) => <Text>{value === 'road' ? 'Đường bộ' : 'Đường hàng không'}</Text> },
         { title: 'Điểm xuất phát', dataIndex: 'startPoint', key: 'startPoint' },
         { title: 'Điểm đến', dataIndex: 'endPoint', key: 'endPoint' },
@@ -56,19 +58,19 @@ const Shipping = ({ showModal }) => {
         {
             title: 'Thao tác',
             key: 'action',
-            render: (record) => <Button onClick={() => showDetailModal(record)}>Chi tiết</Button>,
+            render: (record) => <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Chi tiết</Button>,
         },
         {
-             
+
             key: 'delete',
             render: (record) => {
                 if (record.employee === 0) {
-                    return <Button style={{color: 'red'}} onClick={() => deleteShipping(record)}>Xoá</Button>
+                    return <Button style={{ backgroundColor: 'red', color: 'white', width: '88px' }} onClick={() => deleteShipping(record)}>Xoá</Button>
                 }
                 return <></>
             }
-            
-            
+
+
         },
 
     ];
@@ -166,7 +168,7 @@ const Shipping = ({ showModal }) => {
         console.log(record);
         try {
             const resp = await api.get(`/Order/${record.tripCode}`);
-            if (resp.data.orderDetails.length === 0) {      
+            if (resp.data.orderDetails.length === 0) {
                 const response = await api.delete(`/Order/soft/${record.tripCode}`);
                 console.log(response.data);
                 message.success('Xoá chuyến thành công');
@@ -221,7 +223,7 @@ const Shipping = ({ showModal }) => {
             });
             form.resetFields();
             setIsSelectDay(false);
-            
+
         } catch (error) {
             console.error('Error adding shipping:', error.response.data);
             message.error('Thêm chuyến thất bại');
@@ -345,7 +347,7 @@ const Shipping = ({ showModal }) => {
         fetchShippingList();
     }, []);
     useEffect(() => {
-        
+
     }, [shippingDetail, newOrder]);
     let shipList = [];
     shippingList.forEach(ship => {
@@ -429,11 +431,11 @@ const Shipping = ({ showModal }) => {
 
     const handleAddStaff = async () => {
         console.log('Selected Staff IDs:', selectedStaffIds); // Log the selected staff IDs
-      
+
         console.log('Current staff:', shippingDetail.staff);
         try {
             selectedStaffIds.forEach(async (staffId) => {
-                
+
                 const response = await api.post('/OrderStaff', {
                     orderId: shippingDetail.tripCode,
                     staffId: staffId
@@ -471,10 +473,30 @@ const Shipping = ({ showModal }) => {
                 <Button style={{ width: '200px' }} type="primary" onClick={() => setIsAddShippingModalVisible(true)}>Thêm chuyến mới</Button>
             </div>
             <div style={{ marginBottom: '20px' }}>
-                <Search
-                    placeholder="Tìm kiếm chuyến"
+                <Text>Tìm kiếm chuyến</Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+
+                <Select
                     style={{ width: 200, marginRight: '10px' }}
-                />
+                    placeholder="Điểm xuất phát"
+                    onChange={(value) => setFilterStartPoint(value)}
+                >
+                    <Option value="">Tất cả</Option>
+                    <Option value="Huế">Huế</Option>
+                    <Option value="HCM">HCM</Option>
+                    <Option value="HN">HN</Option>
+                </Select>
+                <Select
+                    style={{ width: 200, marginRight: '10px' }}
+                    placeholder="Điểm đến"
+                    onChange={(value) => setFilterDestination(value)}
+                >
+                    <Option value="">Tất cả</Option>
+                    <Option value="Huế">Huế</Option>
+                    <Option value="HCM">HCM</Option>
+                    <Option value="HN">HN</Option>
+                </Select>
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
                     placeholder="Phương thức vận chuyển"
@@ -498,13 +520,12 @@ const Shipping = ({ showModal }) => {
             </div>
             <Table
                 columns={columns}
-                dataSource={
-                    filterMethod === '' && filterStatus === ''
-                        ? shipList
-                        : shipList.filter(ship =>
-                            (filterMethod === '' || ship.method === filterMethod) &&
-                            (filterStatus === '' || ship.status === filterStatus)
-                        )
+                dataSource={shipList.filter(ship =>
+                    (filterMethod === '' || ship.method === filterMethod) &&
+                    (filterStatus === '' || ship.status === filterStatus) &&
+                    (filterStartPoint === '' || ship.startPoint === filterStartPoint) &&
+                    (filterDestination === '' || ship.endPoint === filterDestination)
+                )
                 }
             />
             <Modal width={900}
@@ -791,9 +812,9 @@ const Shipping = ({ showModal }) => {
                 />
 
             </Modal>
-            
 
-      
+
+
             <Modal
                 title="Thêm chuyến vận chuyển mới"
                 open={isAddShippingModalVisible}
@@ -838,13 +859,13 @@ const Shipping = ({ showModal }) => {
                             disabledDate={(current) => current < moment().startOf('day')}
                         />
                     </Form.Item>
-                   
+
                     <div style={{ display: 'flex' }}>
                         <Button onClick={() => { form.resetFields(); setIsAddShippingModalVisible(false) }} style={{ marginRight: '10px', width: '100px' }}>Đóng</Button>
                         <Form.Item>
                             <Button type="primary" htmlType="submit" style={{ width: '100px' }}>Thêm</Button> {/* Change to htmlType="submit" */}
                         </Form.Item>
-                        
+
                     </div>
 
                 </Form>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Layout, Menu, Input, Select, Button, Table, Modal, Form, DatePicker, Dropdown, Badge, notification, Typography } from 'antd';
+import { Layout, Menu, Dropdown, Badge, notification, Typography } from 'antd';
 import {
     DashboardOutlined, TagsOutlined, UserOutlined, ShoppingCartOutlined,
-    CarOutlined, SettingOutlined, LogoutOutlined, GlobalOutlined, BellOutlined,
+    CarOutlined, SettingOutlined, LogoutOutlined, BellOutlined,
 } from '@ant-design/icons';
 import AccountList from '../component/admin/accountlist';
 import Overview from '../component/admin/overview';
@@ -17,8 +17,6 @@ import ChangePassword from '../component/admin/change-pass';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const { Header, Sider, Content } = Layout;
-const { Search } = Input;
-const { Option } = Select;
 const { Text } = Typography;
 
 const Admin = () => {
@@ -221,10 +219,7 @@ const Admin = () => {
                             </Badge>
                         </Dropdown>
                         {user && <Text style={{ margin: '16px 24px' }}>{user?.staffName}</Text>}
-                        <Select defaultValue={user?.language} style={{ width: 120, float: 'right', margin: '16px 24px' }}>
-                            <Option value="vi"><GlobalOutlined /> Tiếng Việt</Option>
-
-                        </Select>
+                        
 
                     </div>
                 </Header>
@@ -234,18 +229,13 @@ const Admin = () => {
                     </div>
                 </Content>
             </Layout>
-            <Modal
-                title={modalType === 'add' ? 'Thêm mới' : 'Chi tiết'}
-                open={modalVisible}
-                onOk={handleModalOk}
-                onCancel={handleModalCancel}
-            >
-                {/* Modal content based on modalType */}
-            </Modal>
+            
+               
+            
         </Layout>
     );
 };
 
-// ... Other component definitions (Overview, PriceList, AccountList, OrderList, Shipping)
+
 
 export default Admin;
