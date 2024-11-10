@@ -293,13 +293,7 @@ const AccountList = ({ }) => {
                     (filterName === '' || user.name.toLowerCase().includes(filterName.toLowerCase())) &&
                     (filterRole === '' || user.role === filterRole))
             }
-                expandable={{
-                    rowExpandable: (record) => record.role === "Delivering Staff",
 
-                    expandedRowRender: (record) => {
-                        return <Tag style={{ width: '100px', display: 'flex-end', justifyContent: 'center', alignItems: 'center', marginLeft: '10px' }} color={record.status === "Active" ? "green" : "red"}>{record.status === "Active" ? "Đang hoạt động" : "Đang giao hàng"}</Tag>
-                    }
-                }}
             />
 
             <Modal
