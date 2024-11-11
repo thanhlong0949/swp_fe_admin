@@ -19,6 +19,7 @@ function LoginAdmin() {
       
       localStorage.setItem('user', JSON.stringify(response.data));
       message.success("Đăng nhập thành công")
+      await api.post('OrderDetail/update');
       navigate('/admin');
     } catch (error) {
       console.error('Error during login:', error.response ? error.response.data : error.message);

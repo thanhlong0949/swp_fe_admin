@@ -324,8 +324,11 @@ const Shipping = ({ showModal }) => {
 
 
     const fetchOrderDetailList = async (record) => {
+        console.log('shippingDetail', record);
         try {
-            const response = await api.get(`/Order/${record.key}`);
+            const response = await api.get(`/Order/${record.tripCode}`);
+            console.log('response', response.data);
+            
             setOrderDetailList(response.data.orderDetails);
             console.log("order detail", response.data.orderDetails);
         } catch (error) {
