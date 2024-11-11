@@ -25,13 +25,12 @@ const AccountList = ({ }) => {
         { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
         { title: 'Trạng thái', dataIndex: 'deleteStatus', key: 'deleteStatus', render: (value, record) => <Tag color={value ? "red" : "green"}>{value ? "Không hoạt động" : "Đang hoạt động"}</Tag> },
         { title: 'Vai trò', dataIndex: 'role', key: 'role', render: (value) => <Text>{value === "customer" ? "Khách hàng" : value === "Manager" ? "Quản lý" : value === "Sale Staff" ? "Nhân viên bán hàng" : "Nhân viên giao hàng"}</Text> },
-
         {
             title: 'Thao tác',
             key: 'action',
             render: (value, record) => (
 
-                <Button type="primary" onClick={() => showDetailModal(record)}>Chi tiết</Button>
+                <Button type="primary" onClick={() => {console.log(record); showDetailModal(record)}}>Chi tiết</Button>
 
 
             ),

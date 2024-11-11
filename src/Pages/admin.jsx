@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Layout, Menu, Dropdown, Badge, notification, Typography } from 'antd';
+import { Layout, Menu, Dropdown, Badge, notification, Typography, Image } from 'antd';
 import {
     DashboardOutlined, TagsOutlined, UserOutlined, ShoppingCartOutlined,
-    CarOutlined, SettingOutlined, LogoutOutlined, BellOutlined,
+    CarOutlined, SettingOutlined, LogoutOutlined, BellOutlined, 
 } from '@ant-design/icons';
 import AccountList from '../component/admin/accountlist';
 import Overview from '../component/admin/overview';
@@ -23,13 +23,14 @@ const Admin = () => {
 
     const [unread, setUnread] = useState(0);
     const [notifications, setNotifications] = useState([]);
-    const [activeContent, setActiveContent] = useState('overview');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const [activeContent, setActiveContent] = useState(user?.role === 'Manager' ? 'overview' : 'shipping');
     const [modalVisible, setModalVisible] = useState(false);
     const [modalType, setModalType] = useState('');
     const NOTIFICATION_LIMIT = 5; // Limit for notifications
     const DROPDOWN_MAX_HEIGHT = 300; // Maximum height for the dropdown
     // ... other state variables and functions
-    const user = JSON.parse(localStorage.getItem('user'));
+
     const menuItems = [
         { key: 'overview', icon: <DashboardOutlined />, label: 'Tổng quan' },
         { key: 'price-list', icon: <TagsOutlined />, label: 'Bảng giá dịch vụ' },
@@ -42,7 +43,7 @@ const Admin = () => {
 
     const handleReadNotification = async (key) => {
         try {
-            const response = await api.put(`/Notification/${key}`,{
+            const response = await api.put(`/Notification/${key}`, {
                 isRead: true
             });
             console.log(response.status);
@@ -75,8 +76,10 @@ const Admin = () => {
         try {
             const response = await api.get(`/Notification?customerId=0`);
             setNotifications(response.data);
+            console.log('response', response.data);
             setUnread(response.data.filter(item => !item.isRead).length);
-
+            console.log('unread', response.data.filter(item => !item.isRead).length);
+            
         } catch (error) {
             console.log(error);
         }
@@ -100,7 +103,7 @@ const Admin = () => {
         if (connectionState === 'Connected') {
             signalrservice.onOrderDetailCreated((message) => {
                 fetchNotification();
-              
+
                 notification.open({
                     message: 'Thông báo',
                     description: message,
@@ -112,7 +115,7 @@ const Admin = () => {
             await signalrservice.start();
             signalrservice.onOrderDetailCreated((message) => {
                 fetchNotification();
-              
+
                 notification.open({
                     message: 'Thông báo',
                     description: message,
@@ -120,7 +123,7 @@ const Admin = () => {
                     pauseOnHover: true,
                 });
             });
-            
+
         } else if (connectionState === 'Disconnecting') {
             console.warn('SignalR connection is currently disconnecting. Waiting for it to complete...');
             await new Promise(resolve => {
@@ -136,8 +139,8 @@ const Admin = () => {
             await startSignalR(); // Try starting again after it disconnects
             signalrservice.onOrderDetailCreated((message) => {
                 fetchNotification();
-                
-                
+
+
                 notification.open({
                     message: 'Thông báo',
                     description: message,
@@ -167,6 +170,7 @@ const Admin = () => {
             case 'settings':
                 return <ChangePassword />;
             case 'logout':
+                localStorage.removeItem('user');
                 return endAuthAdmin();
             default:
                 return <div>Content not available</div>;
@@ -175,53 +179,62 @@ const Admin = () => {
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            <Sider width={200} theme="light">
-                <div className="logo" style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
+            <Sider width={180} theme="light">
+                <div className="logo"  style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32, width: 200, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} >
+                    <Image width={50} height={45} src="/assets/logo.jpg" alt="Koi Shipping Logo" className="header-logo" />
+                    <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Koi Shipping</Text>
+                </div>
                 <Menu
                     mode="inline"
-                    defaultSelectedKeys={['overview']}
+                    selectedKeys={[activeContent]}
                     style={{ height: '100%', borderRight: 0 }}
-                    items={menuItems}
+                    items={user?.role === 'Manager' ? menuItems : user?.role === 'Sale Staff' ? menuItems.filter(item => (item.key !== 'overview' && item.key !== 'price-list' && item.key !== 'account-list')) : menuItems.filter(item => (item.key !== 'overview' && item.key !== 'price-list' && item.key !== 'account-list' && item.key !== 'order-list'))}
                     onClick={({ key }) => handleMenuClick(key)}
                 />
             </Sider>
             <Layout>
                 <Header style={{ background: '#fff', padding: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <Dropdown
-                            placement="bottomRight"
-                            overlayStyle={{ maxHeight: DROPDOWN_MAX_HEIGHT, overflow: 'auto' }}
-                            menu={{
-                                
-                                items: listNotification.map(item => ({
-                                    style: {
-                                        backgroundColor: item.isRead ? '#fff' : '#f5f5f5',
-                                    },
-                                    key: item.key,
-                                    label: (
-                                        <div>
-                                            <p>Lúc {moment(item.createdDate).format('HH:mm DD/MM/YYYY')}</p>
-                                            <p>{item.message}</p>
-                                        </div>
-                                    ),
-                                    onClick: () => {
-                                        setActiveContent('order-list');
-                                        handleReadNotification(item.key);
-                                    }
-                                })),
-                                trigger: ['hover'],
-                                
-                            }}
 
-                        >
-                            <Badge count={unread}>
-                                <BellOutlined style={{ fontSize: '30px' }} />
-                            </Badge>
-                        </Dropdown>
-                        {user && <Text style={{ margin: '16px 24px' }}>{user?.staffName}</Text>}
-                        
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <UserOutlined style={{ fontSize: '30px', marginRight: '10px' }} />
+                            <Text style={{ margin: '16px 24px' }}>{user?.name}</Text>
+                            </div>
+                            <Dropdown
+                                placement="bottomRight"
+                                overlayStyle={{ maxHeight: DROPDOWN_MAX_HEIGHT, overflow: 'auto' }}
+                                menu={{
 
-                    </div>
+                                    items: listNotification.map(item => ({
+                                        style: {
+                                            backgroundColor: item.isRead ? '#fff' : '#f5f5f5',
+                                        },
+                                        key: item.key,
+                                        label: (
+                                            <div>
+                                                <p>Lúc {moment(item.createdDate).format('HH:mm DD/MM/YYYY')}</p>
+                                                <p>{item.message}</p>
+                                            </div>
+                                        ),
+                                        onClick: () => {
+                                            setActiveContent('order-list');
+                                            handleReadNotification(item.key);
+                                            
+                                        }
+                                    })),
+                                    trigger: ['hover'],
+
+                                }}
+
+                            >
+                                <Badge count={unread}>
+                                    <BellOutlined style={{ fontSize: '30px' }} />
+                                </Badge>
+                            </Dropdown>
+
+
+
+                        </div>
                 </Header>
                 <Content style={{ margin: '24px 16px 0' }}>
                     <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
@@ -229,9 +242,9 @@ const Admin = () => {
                     </div>
                 </Content>
             </Layout>
-            
-               
-            
+
+
+
         </Layout>
     );
 };

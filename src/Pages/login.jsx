@@ -13,16 +13,16 @@ function LoginAdmin() {
     try {
       const response = await api.post('auth/loginstaff', values);
       const {token} = response.data;
-      const {id} = response.data;
-      localStorage.setItem('token', token);
-      const responseUser = await api.get(`Staff/${id}`);
       
-      localStorage.setItem('user', JSON.stringify(responseUser.data));
+
+      localStorage.setItem('token', token);
+      
+      localStorage.setItem('user', JSON.stringify(response.data));
       message.success("Đăng nhập thành công")
       navigate('/admin');
     } catch (error) {
       console.error('Error during login:', error.response ? error.response.data : error.message);
-      setLoginError('Tài khoản hoặc mật khẩu không đúng!'); // Display a user-friendly error message
+      setLoginError('Tài khoản hoặc mật khẩu không đúng!'); 
       message.error('Tài khoản hoặc mật khẩu không đúng!');
     } finally {
       setLoading(false);

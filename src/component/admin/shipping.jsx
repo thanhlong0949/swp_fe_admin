@@ -10,7 +10,7 @@ const { Search } = Input;
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 const Shipping = ({ showModal }) => {
-
+    const user = JSON.parse(localStorage.getItem('user'));
     const [filterStatus, setFilterStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [filterMethod, setFilterMethod] = useState('');
@@ -60,10 +60,14 @@ const Shipping = ({ showModal }) => {
             key: 'action',
             render: (record) => <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Chi tiết</Button>,
         },
+        
         {
 
             key: 'delete',
             render: (record) => {
+                if (user?.role === 'Delivering Staff') {
+                    return <></>
+                }
                 if (record.employee === 0) {
                     return <Button style={{ backgroundColor: 'red', color: 'white', width: '88px' }} onClick={() => deleteShipping(record)}>Xoá</Button>
                 }
@@ -181,7 +185,15 @@ const Shipping = ({ showModal }) => {
             message.error('Xoá chuyến thất bại');
         }
     }
-
+    const fetchShippingListStaff = async () => {
+        try {
+            const response = await api.get(`/Order/staff/${user?.id}`);
+            setShippingList(response.data);
+            console.log("shipping staff", response.data);
+        } catch (error) {
+            console.error('Error fetching shipping list:', error.response.data);
+        }
+    }   
     const fetchShippingList = async () => {
         try {
             setIsLoading(true);
@@ -344,7 +356,7 @@ const Shipping = ({ showModal }) => {
     };
 
     useEffect(() => {
-        fetchShippingList();
+        user?.role === 'Delivering Staff' ?   fetchShippingListStaff() : fetchShippingList();
     }, []);
     useEffect(() => {
 
@@ -470,7 +482,8 @@ const Shipping = ({ showModal }) => {
             {isLoading && <Spin fullscreen size="large" />}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Vận chuyển</h1>
-                <Button style={{ width: '200px' }} type="primary" onClick={() => setIsAddShippingModalVisible(true)}>Thêm chuyến mới</Button>
+                {user?.role === 'Delivering Staff' ? <></> : <Button style={{ width: '200px' }} type="primary" onClick={() => setIsAddShippingModalVisible(true)}>Thêm chuyến mới</Button>}
+                
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Text>Tìm kiếm chuyến</Text>
