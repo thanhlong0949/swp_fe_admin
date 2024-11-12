@@ -61,21 +61,6 @@ const Shipping = ({ showModal }) => {
             render: (record) => <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Chi tiết</Button>,
         },
         
-        {
-
-            key: 'delete',
-            render: (record) => {
-                if (user?.role === 'Delivering Staff') {
-                    return <></>
-                }
-                if (record.employee === 0) {
-                    return <Button style={{ backgroundColor: 'red', color: 'white', width: '88px' }} onClick={() => deleteShipping(record)}>Xoá</Button>
-                }
-                return <></>
-            }
-
-
-        },
 
     ];
 
@@ -500,8 +485,8 @@ const Shipping = ({ showModal }) => {
                 >
                     <Option value="">Tất cả</Option>
                     <Option value="Huế">Huế</Option>
-                    <Option value="HCM">HCM</Option>
-                    <Option value="HN">HN</Option>
+                    <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                    <Option value="Hà Nội">Hà Nội</Option>
                 </Select>
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
@@ -510,8 +495,8 @@ const Shipping = ({ showModal }) => {
                 >
                     <Option value="">Tất cả</Option>
                     <Option value="Huế">Huế</Option>
-                    <Option value="HCM">HCM</Option>
-                    <Option value="HN">HN</Option>
+                    <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                    <Option value="Hà Nội">Hà Nội</Option>
                 </Select>
                 <Select
                     style={{ width: 200, marginRight: '10px' }}
@@ -569,15 +554,15 @@ const Shipping = ({ showModal }) => {
                     <Form.Item label="Điểm xuất phát">
                         <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value })} value={shippingDetail.startPoint}>
                             <Option value="Huế">Huế</Option>
-                            <Option value="HCM">HCM</Option>
-                            <Option value="HN">HN</Option>
+                            <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                            <Option value="Hà Nội">Hà Nội</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm đến" >
                         <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value })} value={shippingDetail.endPoint}>
                             <Option value="Huế">Huế</Option>
-                            <Option value="HCM">HCM</Option>
-                            <Option value="HN">HN</Option>
+                            <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                            <Option value="Hà Nội">Hà Nội</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" >
@@ -856,15 +841,15 @@ const Shipping = ({ showModal }) => {
                     <Form.Item label="Điểm xuất phát" rules={[{ required: true, message: 'Vui lòng chọn điểm xuất phát!' }]}>
                         <Select placeholder="Chọn điểm xuất phát" onChange={(value) => setNewOrder({ ...newOrder, startPoint: value })}>
                             <Option value="Huế">Huế</Option>
-                            <Option value="HCM">HCM</Option>
-                            <Option value="HN">HN</Option>
+                            <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                            <Option value="Hà Nội">Hà Nội</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm đến" rules={[{ required: true, message: 'Vui lòng chọn điểm đến!' }]}>
                         <Select placeholder="Chọn điểm đến" onChange={(value) => setNewOrder({ ...newOrder, endPoint: value })}>
                             <Option value="Huế">Huế</Option>
-                            <Option value="HCM">HCM</Option>
-                            <Option value="HN">HN</Option>
+                            <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
+                            <Option value="Hà Nội">Hà Nội</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" rules={[{ required: true, message: 'Vui lòng chọn ngày khởi hành!' }]}>

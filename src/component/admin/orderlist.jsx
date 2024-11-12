@@ -4,14 +4,12 @@ import { StarFilled, StarOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
 import api from '../config/axios';
-import signalrservice from '../signalR/signalrservice';
-const { Search } = Input;
 const { Option } = Select;
 const { Text } = Typography;
 const OrderList = ({ showModal }) => {
-    const [filterStatus, setFilterStatus] = useState('');
+    const [filterStatus, setFilterStatus] = useState('Pending');
     const [filterName, setFilterName] = useState('');
-    const [orderStatus, setOrderStatus] = useState('');
+    const [pendingOrder, setPendingOrder] = useState(0);
     const [ordersList, setOrdersList] = useState([]);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [recordDetail, setRecordDetail] = useState({});
@@ -19,8 +17,9 @@ const OrderList = ({ showModal }) => {
     const columns = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
-            title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", render: (value) => {
-                return value == 0 ? "Chưa thêm vào chuyến vận chuyển" : value;
+            title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", width: '200px',
+            render: (value) => {
+                return value === 0 ? "Chưa thêm vào chuyến vận chuyển" : value;
             }
         },
         { title: "Tên khách hàng", dataIndex: "customerName", key: "customerName" },
@@ -33,28 +32,29 @@ const OrderList = ({ showModal }) => {
         },
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status", render: (value, record) => {
-                if (value === 'Pending') {
-                    return <Select
-                        defaultValue={value}
-                        style={{ width: 200, marginRight: '10px' }}
-                        placeholder="Trạng thái đơn hàng"
-                        onChange={(newValue) => {
-                            record.status = newValue;
-                            setOrderStatus(newValue);
-                        }}
-                    >
-                        <Option value="Pending">Chờ xử lý</Option>
-                        <Option value="Waiting">Chờ lấy hàng</Option>
-                    </Select>
-                }
-                else {
-                    return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag>
+                
+                    return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : value === 'Pending' ? 'blue' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag>
 
-                }
+                
             }
 
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
+        {
+            title: 'Thao tác',
+            key: 'action',
+            render: (text, record) => (
+                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
+            ),
+        }, {
+
+            key: 'update',
+            render: (text, record) => (
+                 record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Duyệt đơn</Button> 
+                 : record.status === 'Waiting' && record.orderId === 0 ? <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => addToOrderModal(record)}>Thêm vào chuyến</Button> 
+                 : null
+            ),
+        }
     ];
 
     useEffect(() => {
@@ -65,7 +65,9 @@ const OrderList = ({ showModal }) => {
 
     }, []);
 
-
+    const addToOrderModal = (record) => {
+        console.log("Record: ", record);
+    }
     const showDetailModal = (record) => {
         console.log("Record: ", record);
         setRecordDetail(record);
@@ -83,6 +85,7 @@ const OrderList = ({ showModal }) => {
             const response = await api.get('/OrderDetail');
             setOrdersList(response.data);
             console.log("OrdersList: ", response.data);
+            setPendingOrder(response.data.filter(order => order.status === 'Pending').length);
         }
         catch (error) {
             console.error('Error fetching orders list:', error);
@@ -100,7 +103,7 @@ const OrderList = ({ showModal }) => {
             customerName: order.customerName,
             serviceId: order.serviceId,
             price: order.totalPrice,
-            status: orderStatus,
+            status: 'Waiting',
             createdDate: order.createdDate,
             startLocation: order.startLocation,
             destination: order.destination,
@@ -156,7 +159,7 @@ const OrderList = ({ showModal }) => {
             attachedItem: order.attachedItem,
             weight: order.weight,
             quantity: order.quantity,
-            serviceName: order.serviceName,
+           
             image: order.image,
         });
     });
@@ -166,6 +169,9 @@ const OrderList = ({ showModal }) => {
             {isLoading && <Spin size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />}
             <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '10px' }}>
+                    <Text >Số đơn hàng chờ xử lý: {pendingOrder}</Text>
+                </div>
                 <Input
                     value={filterName}
                     placeholder="Tìm kiếm đơn hàng theo tên khách hàng"
@@ -197,19 +203,7 @@ const OrderList = ({ showModal }) => {
                     fetchOrdersList()
                 }}>Làm mới</Button>
             </div>
-            <Table columns={[...columns, {
-                title: 'Thao tác',
-                key: 'action',
-                render: (text, record) => (
-                    <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
-                ),
-            }, {
-
-                key: 'update',
-                render: (text, record) => (
-                    record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button> : null
-                ),
-            }]} dataSource={orderList.filter(order => 
+            <Table columns={columns} dataSource={orderList.filter(order => 
                     (filterName === '' || order.customerName.toLowerCase().includes(filterName.toLowerCase())) &&
                     (filterStatus === '' || order.status === filterStatus)
                 )
