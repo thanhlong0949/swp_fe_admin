@@ -25,7 +25,7 @@ const Admin = () => {
     const [unread, setUnread] = useState(0);
     const [notifications, setNotifications] = useState([]);
     const user = JSON.parse(localStorage.getItem('user'));
-    const [activeContent, setActiveContent] = useState(user?.role === 'Manager' ? 'overview' : 'shipping');
+    const [activeContent, setActiveContent] = useState(user?.role === 'Manager' ? 'overview' : 'order-list');
     const [modalVisible, setModalVisible] = useState(false);
     const [modalType, setModalType] = useState('');
     const NOTIFICATION_LIMIT = 5; // Limit for notifications
@@ -149,7 +149,7 @@ const Admin = () => {
                     mode="inline"
                     selectedKeys={[activeContent]}
                     style={{ height: '100%', borderRight: 0 }}
-                    items={user?.role === 'Manager' ? menuItems : user?.role === 'Sale Staff' ? menuItems.filter(item => (item.key !== 'overview' && item.key !== 'price-list' && item.key !== 'account-list')) : menuItems.filter(item => (item.key !== 'overview' && item.key !== 'price-list' && item.key !== 'account-list' && item.key !== 'order-list'))}
+                    items={user?.role === 'Manager' ? menuItems : menuItems.filter(item => (item.key !== 'overview' && item.key !== 'price-list' && item.key !== 'account-list'))}
                     onClick={({ key }) => handleMenuClick(key)}
                 />
             </Sider>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Modal, Tag, Form, message, Popconfirm, DatePicker, Col, Row, Typography, Descriptions, Spin } from 'antd';
+import { Table, Button, Input, Select, Modal, Tag, Form, message, Popconfirm, DatePicker, Col, Row, Typography, Descriptions, Spin, Popover } from 'antd';
 import moment from 'moment';
 import api from '../config/axios';
 
@@ -60,14 +60,14 @@ const Shipping = ({ showModal }) => {
             key: 'action',
             render: (record) => <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Chi tiết</Button>,
         },
-        
+
 
     ];
 
     const columnOrderDetail = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         { title: "Tên khách hàng", dataIndex: "customerName", key: "customerName" },
-        { title: "Mã dịch vụ", dataIndex: "serviceId", key: "serviceId" },
+        { title: "Nhân viên phụ trách", dataIndex: "deliveryPerson", key: "deliveryPerson", render: (value) => value === '' ? 'Chưa phân công' : value },
         {
             title: "Tổng tiền",
             dataIndex: "price",
@@ -78,22 +78,7 @@ const Shipping = ({ showModal }) => {
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
             , render: (value, record) =>
-                <Select
-                    disabled={value === 'Finish'}
-                    defaultValue={value}
-                    style={{ width: 200, marginRight: '10px' }}
-                    placeholder="Trạng thái đơn hàng"
-                    onChange={(newValue) => {
-                        record.status = newValue;
-                        console.log(record + " " + value + " " + newValue);
-
-                    }}
-                >
-
-                    <Option value="Delivering">Đang vận chuyển</Option>
-                    <Option value="Delivered">Đã giao hàng</Option>
-                    <Option disabled value="Finish">Hoàn thành</Option>
-                </Select>
+                value ? <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : value === 'Pending' ? 'blue' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag> : ''
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
@@ -131,9 +116,9 @@ const Shipping = ({ showModal }) => {
     const addOrderDetail = async () => {
         setIsAddOrderDetailModalVisible(true);
         try {
-            const response = await api.get('/OrderDetail/status/waiting');
+            const response = await api.get(`/OrderDetail/status/waiting?startLocation=${shippingDetail.startPoint}&destination=${shippingDetail.endPoint}&transportMethod=${shippingDetail.method}`);
             setAddOrderDetailList(response.data);
-            console.log(addOrderDetailList);
+            console.log('addOrderDetailList', addOrderDetailList);
             fetchOrderDetailList(shippingDetail);
         } catch (error) {
             console.error('Error adding order detail:', error.response.data);
@@ -153,23 +138,6 @@ const Shipping = ({ showModal }) => {
     });
 
 
-    const deleteShipping = async (record) => {
-        console.log(record);
-        try {
-            const resp = await api.get(`/Order/${record.tripCode}`);
-            if (resp.data.orderDetails.length === 0) {
-                const response = await api.delete(`/Order/soft/${record.tripCode}`);
-                console.log(response.data);
-                message.success('Xoá chuyến thành công');
-                fetchShippingList();
-            } else {
-                message.error('Chuyến đang có đơn hàng');
-            }
-        } catch (error) {
-            console.error('Error deleting shipping:', error.response.data);
-            message.error('Xoá chuyến thất bại');
-        }
-    }
     const fetchShippingListStaff = async () => {
         try {
             const response = await api.get(`/Order/staff/${user?.id}`);
@@ -178,7 +146,7 @@ const Shipping = ({ showModal }) => {
         } catch (error) {
             console.error('Error fetching shipping list:', error.response.data);
         }
-    }   
+    }
     const fetchShippingList = async () => {
         try {
             setIsLoading(true);
@@ -227,6 +195,19 @@ const Shipping = ({ showModal }) => {
         }
     };
 
+    const assignStaff = async (record, staffName) => {
+        record.deliveryPerson = staffName;
+        try {
+            const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
+            console.log(response.data);
+            message.success('Phân công nhân viên thành công');
+            fetchOrderDetailList(shippingDetail);
+        } catch (error) {
+            console.error('Error assigning staff:', error.response.data);
+            message.error('Phân công nhân viên thất bại');
+        }
+    }
+
     const addNewOrderDetail = async (selectedRows) => {
         console.log('Selected rows:', selectedRows);
 
@@ -261,43 +242,18 @@ const Shipping = ({ showModal }) => {
 
 
 
-    const updateOrderDetail = async (record) => {
-        console.log('Updating orderDetailId:', record.orderDetailId); // Log the ID to be deleted
-        try {
-
-            const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
-            console.log(response.data);
-            message.success('Cập nhật đơn hàng thành công');
-
-
-            if (record.status === 'Delivering') {
-                const response3 = await api.delete(`/TrackingOrderD/${record.orderDetailId}/4`);
-                console.log("TrackingOrderDetail:", response3.data);
-            } else {
-                const response2 = await api.post('/TrackingOrderD', {
-                    orderDetailId: record.orderDetailId,
-                    trackingId: 4,
-                })
-                console.log("TrackingOrderDetail:", response2.data);
-            }
-
-            fetchOrderDetailList(shippingDetail);
-        } catch (error) {
-            console.error('Error updating order detail:', error.response.data);
-            message.error('Cập nhật đơn hàng thất bại');
-        }
-    };
     const confirm = async (record) => {
         console.log('Deleting orderDetailId:', record.orderDetailId); // Log the ID to be deleted
-        const status = record.status;
+
+        record.status = 'Waiting';
+        record.orderId = 0;
+        record.deliveryPerson = '';
+        console.log('record', record);
         try {
-            record.status = 'Waiting';
-            record.orderId = 0;
             const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
-            console.log(response.data);
             const response2 = await api.delete(`/TrackingOrderD/${record.orderDetailId}/3`);
-            console.log("TrackingOrderDetail:", response2.data);
             message.success('Xoá đơn hàng thành công');
+            shippingDetail.orderDetails = shippingDetail.orderDetails.filter(order => order.orderDetailId !== record.orderDetailId);
             fetchOrderDetailList(shippingDetail);
         } catch (error) {
             console.error('Error deleting order detail:', error.response.data);
@@ -313,7 +269,7 @@ const Shipping = ({ showModal }) => {
         try {
             const response = await api.get(`/Order/${record.tripCode}`);
             console.log('response', response.data);
-            
+            setShippingDetail({ ...record, orderDetails: response.data.orderDetails });
             setOrderDetailList(response.data.orderDetails);
             console.log("order detail", response.data.orderDetails);
         } catch (error) {
@@ -344,7 +300,7 @@ const Shipping = ({ showModal }) => {
     };
 
     useEffect(() => {
-        user?.role === 'Delivering Staff' ?   fetchShippingListStaff() : fetchShippingList();
+        user?.role === 'Delivering Staff' ? fetchShippingListStaff() : fetchShippingList();
     }, []);
     useEffect(() => {
 
@@ -471,7 +427,7 @@ const Shipping = ({ showModal }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h1>Vận chuyển</h1>
                 {user?.role === 'Delivering Staff' ? <></> : <Button style={{ width: '200px' }} type="primary" onClick={() => setIsAddShippingModalVisible(true)}>Thêm chuyến mới</Button>}
-                
+
             </div>
             <div style={{ marginBottom: '20px' }}>
                 <Text>Tìm kiếm chuyến</Text>
@@ -543,7 +499,7 @@ const Shipping = ({ showModal }) => {
                     <Form.Item label="Phương thức">
                         <Select
                             value={shippingDetail.method}
-                            disabled={shippingDetail.status === 'Finish' ? true : false}
+                            disabled={shippingDetail.status === 'Finish' || shippingDetail.orderDetails.length > 0 ? true : false}
                             onChange={(value) => setShippingDetail({ ...shippingDetail, method: value })}
                             style={{ width: 200 }}
                         >
@@ -552,14 +508,14 @@ const Shipping = ({ showModal }) => {
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm xuất phát">
-                        <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value })} value={shippingDetail.startPoint}>
+                        <Select disabled={shippingDetail.status === 'Finish' || shippingDetail.orderDetails.length > 0 ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, startPoint: value })} value={shippingDetail.startPoint}>
                             <Option value="Huế">Huế</Option>
                             <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
                             <Option value="Hà Nội">Hà Nội</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item label="Điểm đến" >
-                        <Select disabled={shippingDetail.status === 'Finish' ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value })} value={shippingDetail.endPoint}>
+                        <Select disabled={shippingDetail.status === 'Finish' || shippingDetail.orderDetails.length > 0 ? true : false} onChange={(value) => setShippingDetail({ ...shippingDetail, endPoint: value })} value={shippingDetail.endPoint}>
                             <Option value="Huế">Huế</Option>
                             <Option value="Hồ Chí Minh">Hồ Chí Minh</Option>
                             <Option value="Hà Nội">Hà Nội</Option>
@@ -614,14 +570,16 @@ const Shipping = ({ showModal }) => {
                                         {staffs.staffName}
                                     </Descriptions.Item>
                                     <Descriptions.Item>
-                                        <Popconfirm
-                                            onConfirm={() => removeStaff(staffs.staffId)}
-                                            title="Bạn có chắc chắn muốn xoá nhân viên này?"
-                                            okText="Có"
-                                            cancelText="Không"
-                                        >
-                                            <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
-                                        </Popconfirm>
+                                        {shippingDetail.orderDetails.filter(order => order.deliveryPerson === staffs.staffName).length > 0 ? <></> :
+                                            <Popconfirm
+                                                onConfirm={() => removeStaff(staffs.staffId)}
+                                                title="Bạn có chắc chắn muốn xoá nhân viên này?"
+                                                okText="Có"
+                                                cancelText="Không"
+                                            >
+                                                <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
+                                            </Popconfirm>
+                                        }
                                     </Descriptions.Item>
 
                                 </React.Fragment>
@@ -634,7 +592,7 @@ const Shipping = ({ showModal }) => {
                     </Form.Item>
                 </Form>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                    <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
+                    <Button disabled={shippingDetail.status === 'Finish' || shippingDetail.staff.length === 0 ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' || shippingDetail.staff.length === 0 ? '#999' : '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                     <Table
@@ -655,7 +613,21 @@ const Shipping = ({ showModal }) => {
                                             <Button disabled={record.status === 'Delivered' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
                                         </Popconfirm>
 
-                                        <Button style={{ marginTop: '10px' }} onClick={() => updateOrderDetail(record)}>Cập nhật</Button>
+
+                                        <Popover
+                                            title="Nhân viên phụ trách"
+                                            trigger="click"
+                                            content={
+                                                <div>
+                                                    {shippingDetail.staff.map(staff => (
+                                                        <Row>
+                                                            <Col span={12}>{staff.staffName}</Col>
+                                                            <Col span={12}>{record.deliveryPerson === staff.staffName ? <></> : <Button onClick={() => assignStaff(record, staff.staffName)}>Phân công</Button>}</Col>
+                                                        </Row>
+                                                    ))}
+                                                </div>}>
+                                            <Button style={{ marginTop: '10px' }}>Phân công</Button>
+                                        </Popover>
                                     </div>
                             ),
 
