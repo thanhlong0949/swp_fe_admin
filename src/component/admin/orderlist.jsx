@@ -30,8 +30,8 @@ const OrderList = ({ showModal }) => {
             }
         },
         { title: "Tên khách hàng", dataIndex: "customerName", key: "customerName" },
-        { title: "Điểm đi", dataIndex: "startLocation", key: "startLocation" },
-        { title: "Điểm đến", dataIndex: "destination", key: "destination" },
+        { title: "Điểm đi", dataIndex: "startLocation", key: "startLocation", width: '100px', render: (value) => value.split('-')[2] },
+        { title: "Điểm đến", dataIndex: "destination", key: "destination", width: '100px', render: (value) => value.split('-')[2] },
         {
             title: "Tổng tiền",
             dataIndex: "totalPrice",
@@ -64,14 +64,20 @@ const OrderList = ({ showModal }) => {
             ),
         }
     ];
+    const checkFinish = async (record) => {
+        const response = await api.get(`/Order/${record.orderId}`);
+        console.log("so sanh", response.data.status === 'Finish');
+
+        return response.data.status === 'Finish';
+    }
     const columnsDeli = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
             title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", width: '150px',
         },
         Table.EXPAND_COLUMN,
-        { title: "Điểm đi", dataIndex: "startLocation", key: "startLocation" },
-        { title: "Điểm đến", dataIndex: "destination", key: "destination" },
+        { title: "Điểm đi", dataIndex: "startLocation", key: "startLocation", render: (value) => value.split('-')[2] },
+        { title: "Điểm đến", dataIndex: "destination", key: "destination", render: (value) => value.split('-')[2] },
         {
             title: "Tổng tiền",
             dataIndex: "totalPrice",
@@ -99,34 +105,32 @@ const OrderList = ({ showModal }) => {
 
             key: 'update',
             render: (text, record) => (
-                record.status === 'Pending' ? <Button style={{ backgroundColor: '#ff6600', color: 'white', width: '88px' }} onClick={() => updateOrderDetail(record)}>Duyệt đơn</Button>
-                    : record.status === 'Waiting' && record.orderId === 0 ? <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => addToOrderModal(record)}>Thêm vào chuyến</Button>
-                        : record.status === 'Delivering'
-                            ? <Popover
-                                
-                                trigger='click'
-                                title="Xác nhận giao hàng"
-                                content={<div>
-                                    <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
-                                    <Upload
-                                        customRequest={handleUpload}
-                                        onChange={handleChange}
-                                        fileList={fileList}
-                                        maxCount={1}
-                                        accept='image/*'
-                                        onRemove={() => {
-                                            setFileList([]);
-                                        }}
-                                        
-                                    >
-                                        <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
-                                    </Upload>
+                checkFinish(record) ? record.status === 'Delivering'
+                    ? <Popover
+                        trigger='click'
+                        title="Xác nhận giao hàng"
+                        content={<div>
+                            <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
+                            <Upload
+                                customRequest={handleUpload}
+                                onChange={handleChange}
+                                fileList={fileList}
+                                maxCount={1}
+                                listType='picture'
+                                accept='image/*'
+                                onRemove={() => {
+                                    setFileList([]);
+                                }}
 
-                                </div>}
                             >
-                                <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record)}>Giao hàng</Button>
-                            </Popover>
-                            : null
+                                <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
+                            </Upload>
+
+                        </div>}
+                    >
+                        <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record)}>Giao hàng</Button>
+                    </Popover>
+                    : null : null
             ),
         }
     ];
@@ -185,7 +189,7 @@ const OrderList = ({ showModal }) => {
             record.confirmationImage = fileList[0].url;
             record.status = 'Delivered';
             console.log('record', record);
-            try{
+            try {
                 const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
                 message.success("Giao hàng thành công");
                 const response2 = await api.post('/TrackingOrderD', {
@@ -194,7 +198,7 @@ const OrderList = ({ showModal }) => {
                 })
                 fetchOrdersListDelivering();
             }
-            catch(error){
+            catch (error) {
                 console.error('Error confirming delivering:', error);
                 message.error("Giao hàng thất bại");
             }
@@ -251,8 +255,8 @@ const OrderList = ({ showModal }) => {
         console.log("RecordAddToOrder: ", recordAddToOrder);
         try {
             const response = await api.post('/Order', {
-                startLocation: recordAddToOrder.startLocation,
-                destination: recordAddToOrder.destination,
+                startLocation: recordAddToOrder.startLocation.split('-')[2],
+                destination: recordAddToOrder.destination.split('-')[2],
                 transportMethod: recordAddToOrder.transportMethod,
                 staffId: [],
                 departureDate: moment().startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
@@ -272,7 +276,7 @@ const OrderList = ({ showModal }) => {
     const fetchOrderDestination = async (record) => {
         setIsLoading(true);
         try {
-            const response = await api.get(`/Order/filter?startLocation=${record.startLocation}&destination=${record.destination}&transportMethod=${record.transportMethod}`);
+            const response = await api.get(`/Order/filter?startLocation=${record.startLocation.split('-')[2]}&destination=${record.destination.split('-')[2]}&transportMethod=${record.transportMethod}`);
             setListOrderDestination(response.data);
             setIsAddToOrderModalVisible(true);
         }
@@ -449,7 +453,7 @@ const OrderList = ({ showModal }) => {
                 <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => {
                     setFilterStatus('');
                     setFilterName('');
-                    {user.role === 'Delivering Staff' ? fetchOrdersListDelivering() : fetchOrdersList()}
+                    { user.role === 'Delivering Staff' ? fetchOrdersListDelivering() : fetchOrdersList() }
                 }}>Làm mới</Button>
             </div>
             <Table columns={user.role === 'Delivering Staff' ? columnsDeli : columns} dataSource={orderList.filter(order =>
@@ -494,16 +498,16 @@ const OrderList = ({ showModal }) => {
                         <Descriptions.Item label="Địa chỉ lấy hàng" span={3}>{recordDetail.startLocation}</Descriptions.Item>
                         <Descriptions.Item label="Vật phẩm đi kèm" span={3}>{recordDetail.attachedItem}</Descriptions.Item>
                         <Descriptions.Item label="Địa chỉ giao hàng" span={3}>{recordDetail.destination}</Descriptions.Item>
-                        <Descriptions.Item span={3} />
-                        <Descriptions.Item label="Trạng thái đơn hàng" span={3}>
-                            <Row>
-                                {recordDetail.status === 'Pending' ? 'Chờ xử lý' : recordDetail.status === 'Waiting' ? 'Chờ lấy hàng' : recordDetail.status === 'Delivering' ? 'Đang vận chuyển' : recordDetail.status === 'Finish' ? 'Hoàn thành' : recordDetail.status === 'Cancel' ? 'Đã hủy' : 'Đã giao hàng'}
-                            </Row>
-                            <Row>
-                                {recordDetail.status === 'Delivered' ? <Image src={recordDetail.confirmationImage} width={100} height={100} /> : ''}
-                            </Row>
-                        </Descriptions.Item>
 
+                        <Descriptions.Item label="Trạng thái đơn hàng" span={3}>
+
+                            {recordDetail.status === 'Pending' ? 'Chờ xử lý' : recordDetail.status === 'Waiting' ? 'Chờ lấy hàng' : recordDetail.status === 'Delivering' ? 'Đang vận chuyển' : recordDetail.status === 'Finish' ? 'Hoàn thành' : recordDetail.status === 'Cancel' ? 'Đã hủy' : 'Đã giao hàng'}
+
+
+                        </Descriptions.Item>
+                        {recordDetail.status === 'Delivered' || recordDetail.status === 'Finish' ? <Descriptions.Item label="Hình ảnh xác nhận" span={6}>
+                            <Image src={recordDetail.confirmationImage} width={100} height={100} />
+                        </Descriptions.Item> : ''}
                         <Descriptions.Item label="Hình ảnh mô tả" span={6}>
                             <Row>
                                 {recordDetail.image === null ? <Text>Không có</Text> : recordDetail.image?.split(',').length > 0 ? recordDetail.image?.split(',').map((item, index) => (

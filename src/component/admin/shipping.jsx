@@ -344,7 +344,7 @@ const Shipping = ({ showModal }) => {
             const response = await api.put(`/Order/${order.orderId}`, order);
             console.log(response.data);
             message.success('Cập nhật chuyến thành công');
-            fetchShippingList();
+            user?.role === 'Delivering Staff' ? fetchShippingListStaff() : fetchShippingList();
             setIsDetailModalVisible(false);
         } catch (error) {
             console.error('Error updating shipping:', error.response.data);
@@ -408,7 +408,7 @@ const Shipping = ({ showModal }) => {
                 console.log(response3.data);
 
                 message.success('Thêm nhân viên thành công');
-                fetchShippingList();
+                user?.role === 'Delivering Staff' ? fetchShippingListStaff() : fetchShippingList();
                 setIsAddStaffModalVisible(false); // Close the modal after adding
                 setSelectedStaffIds([]);
             });
@@ -523,7 +523,7 @@ const Shipping = ({ showModal }) => {
                     </Form.Item>
                     <Form.Item label="Ngày khởi hành" >
                         <DatePicker
-                            disabled={shippingDetail.status === 'Finish' ? true : false}
+                            disabled={shippingDetail.status === 'Finish' || user?.role === 'Delivering Staff' ? true : false}
                             value={moment(shippingDetail.departureDate)}
                             format="DD/MM/YYYY"
                             placeholder="Chọn ngày khởi hành"
@@ -550,17 +550,13 @@ const Shipping = ({ showModal }) => {
                         <Input value={shippingDetail.totalWeight} onChange={(value) => setShippingDetail({ ...shippingDetail, totalWeight: value.target.value })} />
                     </Form.Item> */}
                     <Form.Item label="Trạng thái">
-                        <Select
-                            disabled={shippingDetail.status === 'Finish' ? true : false}
-                            value={status === 'Ready' ? 'Sẵn sàng' : status === 'Delivering' ? 'Đang vận chuyển' : 'Hoàn thành'}
-                            // onChange={(value) => setShippingDetail({ ...shippingDetail, status: value })}
-                            onChange={(value) => setStatus(value)}
-                            style={{ width: 200 }}
-                        >
-                            <Option value="Ready">Sẵn sàng</Option>
-                            <Option value="Delivering">Đang vận chuyển</Option>
-                            <Option value="Finish">Hoàn thành</Option>
-                        </Select>
+                        {user?.role === 'Delivering Staff' ?
+                            <Select value={status} onChange={(value) => setStatus(value)} style={{ width: 200 }}>
+                                <Option disabled={status === 'Finish' || status === 'Delivering' ? true : false} value="Ready">Sẵn sàng</Option>
+                                <Option disabled={status === 'Finish' ? true : false} value="Delivering">Đang vận chuyển</Option>
+                                <Option disabled={status === 'Ready' ? true : false} value="Finish">Hoàn thành</Option>
+                            </Select>
+                            : <Text>{status === 'Ready' ? 'Sẵn sàng' : status === 'Delivering' ? 'Đang vận chuyển' : 'Hoàn thành'}</Text>}
                     </Form.Item>
                     <Form.Item >
                         <Descriptions title="Nhân viên phụ trách">
@@ -577,7 +573,7 @@ const Shipping = ({ showModal }) => {
                                                 okText="Có"
                                                 cancelText="Không"
                                             >
-                                                <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>
+                                                {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>}
                                             </Popconfirm>
                                         }
                                     </Descriptions.Item>
@@ -586,9 +582,9 @@ const Shipping = ({ showModal }) => {
                             ))}
                         </Descriptions>
 
-                        <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} onClick={() => addStaff()}>
+                        {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} onClick={() => addStaff()}>
                             +
-                        </Button>
+                        </Button>}
                     </Form.Item>
                 </Form>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
@@ -600,7 +596,7 @@ const Shipping = ({ showModal }) => {
                         {
                             title: 'Thao tác',
                             render: (record) => (
-                                record.status === 'Finish' ? <></> :
+                                record.status === 'Finish' || record.status === 'Delivered' || user?.role === 'Delivering Staff' ? <></> :
                                     <div>
 
                                         <Popconfirm
@@ -723,7 +719,7 @@ const Shipping = ({ showModal }) => {
 
                     />
                 </div>
-                <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>
+                {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>}
             </Modal>
             <Modal
                 title="Chọn nhân viên phụ trách"
