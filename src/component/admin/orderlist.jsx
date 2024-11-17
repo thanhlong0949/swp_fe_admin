@@ -101,48 +101,50 @@ const OrderList = ({ showModal }) => {
 
             key: 'update',
             render: (text, record) => (
-                record.isDone === false ? null : (
-                    record.status === 'Delivering' || record.status === 'Fail' || record.status === 'Again' ? (
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            {record.status === 'Fail'
-                                ?
-                                <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 2)}>Giao lại</Button>
-                                : <Popover
+                console.log("record", record),
+                record.isDone ? (
+                    record.status === 'Delivering' || record.status === 'Fail' || record.status === 'Again'
+                        ? (
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {record.status === 'Fail'
+                                    ?
+                                    <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 2)}>Giao lại</Button>
+                                    : <Popover
+                                        trigger='click'
+                                        title="Xác nhận giao hàng"
+                                        content={<div>
+                                            <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
+                                            <Upload
+                                                customRequest={handleUpload}
+                                                onChange={handleChange}
+                                                fileList={fileList}
+                                                maxCount={1}
+                                                listType='picture'
+                                                accept='image/*'
+                                                onRemove={() => {
+                                                    setFileList([]);
+                                                }}
+                                            >
+                                                <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
+                                            </Upload>
+                                        </div>}
+                                    >
+                                        <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 1)}>Giao hàng</Button>
+                                    </Popover>}
+                                <Popover
                                     trigger='click'
-                                    title="Xác nhận giao hàng"
+                                    title="Giao hàng thất bại"
                                     content={<div>
-                                        <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
-                                        <Upload
-                                            customRequest={handleUpload}
-                                            onChange={handleChange}
-                                            fileList={fileList}
-                                            maxCount={1}
-                                            listType='picture'
-                                            accept='image/*'
-                                            onRemove={() => {
-                                                setFileList([]);
-                                            }}
-                                        >
-                                            <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
-                                        </Upload>
+                                        <p>Lí do huỷ đơn hàng</p>
+                                        <Input required onChange={(e) => setFailReason(e.target.value)} />
                                     </div>}
                                 >
-                                    <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 1)}>Giao hàng</Button>
-                                </Popover>}
-                            <Popover
-                                trigger='click'
-                                title="Giao hàng thất bại"
-                                content={<div>
-                                    <p>Lí do huỷ đơn hàng</p>
-                                    <Input required onChange={(e) => setFailReason(e.target.value)} />
-                                </div>}
-                            >
-                                <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
-                            </Popover>
-                        </div>
-                    ) : null
+                                    <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                                </Popover>
+                            </div>
+                        ) : null
                 )
-
+                    : null
             ),
         },
 
@@ -466,6 +468,7 @@ const OrderList = ({ showModal }) => {
             deliveryPerson: order.deliveryPerson,
             confirmationImage: order.confirmationImage,
             image: order.image,
+            isDone: order.isDone,
         });
     });
     useEffect(() => {
