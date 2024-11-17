@@ -574,7 +574,7 @@ const Shipping = ({ showModal }) => {
                                                 okText="Có"
                                                 cancelText="Không"
                                             >
-                                                {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>}
+                                                {user?.role === 'Delivering Staff' || shippingDetail.status !== 'Ready' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} danger>Xoá</Button>}
                                             </Popconfirm>
                                         }
                                     </Descriptions.Item>
@@ -583,13 +583,13 @@ const Shipping = ({ showModal }) => {
                             ))}
                         </Descriptions>
 
-                        {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} onClick={() => addStaff()}>
+                        {user?.role === 'Delivering Staff' || shippingDetail.status !== 'Ready' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ width: '50px' }} onClick={() => addStaff()}>
                             +
                         </Button>}
                     </Form.Item>
                 </Form>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                    <Button disabled={shippingDetail.status === 'Finish' || shippingDetail.staff.length === 0 ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' || shippingDetail.staff.length === 0 ? '#999' : '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
+                    <Button disabled={(shippingDetail.status !== 'Ready' && user?.role !== 'Delivering Staff') || shippingDetail.staff.length === 0 ? true : false} style={{ marginTop: '20px', backgroundColor: (shippingDetail.status !== 'Ready' && user?.role !== 'Delivering Staff') || shippingDetail.staff.length === 0 ? '#999' : '#1677FF', color: 'white', width: '150px' }} onClick={() => updateShipping(shippingDetail)}>Cập nhật</Button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
                     <Table
@@ -597,7 +597,7 @@ const Shipping = ({ showModal }) => {
                         {
                             title: 'Thao tác',
                             render: (record) => (
-                                shippingDetail.status === 'Finish' || record.status !== 'Delivering' || user?.role === 'Delivering Staff' ? <></> :
+                                shippingDetail.status !== 'Ready' || record.status !== 'Delivering' || user?.role === 'Delivering Staff' ? <></> :
                                     <div>
 
                                         <Popconfirm
@@ -720,7 +720,7 @@ const Shipping = ({ showModal }) => {
 
                     />
                 </div>
-                {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status === 'Finish' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status === 'Finish' ? '#999' : '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>}
+                {user?.role === 'Delivering Staff' ? <></> : <Button disabled={shippingDetail.status !== 'Ready' ? true : false} style={{ marginTop: '20px', backgroundColor: shippingDetail.status !== 'Ready' ? '#999' : '#1677FF', color: 'white', width: '200px' }} onClick={() => addOrderDetail()}>Thêm đơn hàng mới</Button>}
             </Modal>
             <Modal
                 title="Chọn nhân viên phụ trách"
