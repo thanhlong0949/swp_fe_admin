@@ -10,7 +10,7 @@ const { Option } = Select;
 const { Text } = Typography;
 const OrderList = ({ showModal }) => {
     const user = JSON.parse(localStorage.getItem('user'));
-    const [filterStatus, setFilterStatus] = useState(user.role === 'Delivering Staff' ? 'Delivering' : 'Pending');
+    const [filterStatus, setFilterStatus] = useState(user?.role === 'Delivering Staff' ? 'Delivering' : 'Pending');
     const [filterName, setFilterName] = useState('');
     const [pendingOrder, setPendingOrder] = useState(0);
     const [ordersList, setOrdersList] = useState([]);
@@ -21,6 +21,7 @@ const OrderList = ({ showModal }) => {
     const [listOrderDestination, setListOrderDestination] = useState([]);
     const [recordAddToOrder, setRecordAddToOrder] = useState({});
     const [fileList, setFileList] = useState([]);
+    const [failReason, setFailReason] = useState('');
     const columns = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
@@ -41,7 +42,7 @@ const OrderList = ({ showModal }) => {
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status", render: (value, record) => {
 
-                return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : value === 'Pending' ? 'blue' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag>
+                return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' || value === 'Again' ? 'green' : value === 'Pending' ? 'blue' : value === 'Fail' ? 'red' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : value === 'Fail' ? 'Giao thất bại' : value === 'Again' ? 'Gửi lại' : value === 'Delivered' ? 'Đã giao hàng' : 'Hoàn trả'}</Tag>
 
 
             }
@@ -63,6 +64,7 @@ const OrderList = ({ showModal }) => {
                         : null
             ),
         }
+
     ];
     const checkFinish = async (record) => {
         const response = await api.get(`/Order/${record.orderId}`);
@@ -73,9 +75,10 @@ const OrderList = ({ showModal }) => {
     const columnsDeli = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
-            title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", width: '150px',
+            title: "Mã chuyến vận chuyển", dataIndex: "orderId", key: "orderId", width: '200px',
         },
         Table.EXPAND_COLUMN,
+        { title: "Tên khách hàng", dataIndex: "customerName", key: "customerName" },
         { title: "Điểm đi", dataIndex: "startLocation", key: "startLocation", render: (value) => value.split('-')[2] },
         { title: "Điểm đến", dataIndex: "destination", key: "destination", render: (value) => value.split('-')[2] },
         {
@@ -87,25 +90,21 @@ const OrderList = ({ showModal }) => {
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status", render: (value, record) => {
 
-                return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : value === 'Pending' ? 'blue' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag>
+                return <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' || value === 'Again' ? 'green' : value === 'Pending' ? 'blue' : value === 'Fail' ? 'red' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : value === 'Fail' ? 'Giao thất bại' : value === 'Again' ? 'Gửi lại' : value === 'Delivered' ? 'Đã giao hàng' : 'Hoàn trả'}</Tag>
 
 
             }
 
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
-        {
-            title: 'Thao tác',
-            key: 'action',
-            render: (text, record) => (
-                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
-            ),
-        },
+        { title: 'Thao tác', key: 'action', render: (text, record) => (
+            <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
+        ) },
         {
 
             key: 'update',
             render: (text, record) => (
-                checkFinish(record) ? record.status === 'Delivering'
+                checkFinish(record) ? record.status === 'Delivering' || record.status === 'Fail'
                     ? <Popover
                         trigger='click'
                         title="Xác nhận giao hàng"
@@ -128,11 +127,30 @@ const OrderList = ({ showModal }) => {
 
                         </div>}
                     >
-                        <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record)}>Giao hàng</Button>
+                        <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, { type: record.status === 'Fail' ? 2 : 1 })}>{record.status === 'Fail' ? 'Giao lại' : 'Giao hàng'}</Button>
                     </Popover>
                     : null : null
             ),
+        },
+        {
+            key: 'fail',
+            render: (text, record) => (
+                checkFinish(record) ? record.status === 'Delivering' || record.status === 'Fail'
+                    ? <Popover
+                        trigger='click'
+                        title="Giao hàng thất bại"
+                        content={<div>
+                            <p>Lí do huỷ đơn hàng</p>
+                            <Input required onChange={(e) => setFailReason(e.target.value)} />
+                        </div>}
+                    >
+                        <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                    </Popover>
+
+                    : null : null
+            ),
         }
+
     ];
     const columnOrderDestination = [
 
@@ -147,6 +165,36 @@ const OrderList = ({ showModal }) => {
             ),
         }
     ]
+    const failDelivering = async (record, type) => {
+        console.log("failReason", failReason + " " + type);
+        console.log(record.status);
+
+
+        if (failReason === '') {
+            message.error("Vui lòng nhập lí do huỷ đơn hàng");
+            return;
+        }
+        try {
+            record.status = type === 1 ? 'Fail' : 'Refund';
+            record.confirmationImage = failReason;
+            await api.put(`/OrderDetail/${record.orderDetailId}`, record);
+            message.success("Đã cập nhật đơn hàng mã " + record.orderDetailId);
+            const response2 = await api.post('/TrackingOrderD', {
+                orderDetailId: record.orderDetailId,
+                trackingId: type === 1 ? 6 : 8,
+            })
+            if (type === 2) {
+                const response3 = await api.post(`/OrderDetail/copy/${record.orderDetailId}`);
+                message.success("Đã tạo đơn hoàn trả hàng");
+            }
+            setFailReason('');
+            fetchOrdersListDelivering();
+        }
+        catch (error) {
+            console.error('Error failing delivering:', error);
+            message.error("Huỷ đơn hàng thất bại");
+        }
+    }
     const handleChange = ({ fileList: newFileList }) => {
         setFileList(newFileList)
         console.log("fileList", fileList);
@@ -184,17 +232,18 @@ const OrderList = ({ showModal }) => {
             message.error(`Upload failed: ${error.message}`);
         }
     }
-    const confirmDelivering = async (record) => {
+    const confirmDelivering = async (record, type) => {
+
         if (fileList.length > 0) {
             record.confirmationImage = fileList[0].url;
-            record.status = 'Delivered';
+            record.status = type === 1 ? 'Delivered' : 'Again';
             console.log('record', record);
             try {
                 const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
                 message.success("Giao hàng thành công");
                 const response2 = await api.post('/TrackingOrderD', {
                     orderDetailId: record.orderDetailId,
-                    trackingId: 4,
+                    trackingId: type === 1 ? 4 : 7,
                 })
                 fetchOrdersListDelivering();
             }
@@ -403,9 +452,9 @@ const OrderList = ({ showModal }) => {
         });
     });
     useEffect(() => {
-        console.log('user', user.role);
+        console.log('user', user?.role);
 
-        if (user.role === 'Delivering Staff') {
+        if (user?.role === 'Delivering Staff') {
 
 
             fetchOrdersListDelivering();
@@ -422,7 +471,7 @@ const OrderList = ({ showModal }) => {
             {isLoading && <Spin size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} />}
             <h1>Quản lý đơn hàng</h1>
             <div style={{ marginBottom: '20px' }}>
-                {user.role === 'Delivering Staff' ? <></> : <div style={{ marginBottom: '10px' }}>
+                {user?.role === 'Delivering Staff' ? <></> : <div style={{ marginBottom: '10px' }}>
                     <Text >Số đơn hàng chờ xử lý: {pendingOrder}</Text>
                 </div>}
                 <Input
@@ -453,17 +502,22 @@ const OrderList = ({ showModal }) => {
                 <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => {
                     setFilterStatus('');
                     setFilterName('');
-                    { user.role === 'Delivering Staff' ? fetchOrdersListDelivering() : fetchOrdersList() }
+                    { user?.role === 'Delivering Staff' ? fetchOrdersListDelivering() : fetchOrdersList() }
                 }}>Làm mới</Button>
             </div>
-            <Table columns={user.role === 'Delivering Staff' ? columnsDeli : columns} dataSource={orderList.filter(order =>
-                (filterName === '' || order.customerName.toLowerCase().includes(filterName.toLowerCase())) &&
-                (filterStatus === '' || order.status === filterStatus)
-            )
-            }
+            <Table
+                // onRow={(record) => {
+                //     return {
+                //         onClick: () => showDetailModal(record),
+                //     };
+                // }}
+                columns={user?.role === 'Delivering Staff' ? columnsDeli : columns} dataSource={orderList.filter(order =>
+                    (filterName === '' || order.customerName.toLowerCase().includes(filterName.toLowerCase())) &&
+                    (filterStatus === '' || order.status === filterStatus)
+                )}
                 expandable={{
                     expandedRowRender: (record) => <div><p>Địa chỉ gửi: {record.startLocation}</p><p>Địa chỉ nhận: {record.destination}</p></div>,
-                    rowExpandable: (record) => user.role === 'Delivering Staff',
+                    rowExpandable: (record) => user?.role === 'Delivering Staff',
                 }}
                 locale={{ emptyText: 'Không tìm thấy đơn hàng' }} />
             <div style={{ width: '80%', maxWidth: '100%' }}>
@@ -501,16 +555,18 @@ const OrderList = ({ showModal }) => {
 
                         <Descriptions.Item label="Trạng thái đơn hàng" span={3}>
 
-                            {recordDetail.status === 'Pending' ? 'Chờ xử lý' : recordDetail.status === 'Waiting' ? 'Chờ lấy hàng' : recordDetail.status === 'Delivering' ? 'Đang vận chuyển' : recordDetail.status === 'Finish' ? 'Hoàn thành' : recordDetail.status === 'Cancel' ? 'Đã hủy' : 'Đã giao hàng'}
+                            {recordDetail.status === 'Pending' ? 'Chờ xử lý' : recordDetail.status === 'Waiting' ? 'Chờ lấy hàng' : recordDetail.status === 'Delivering' ? 'Đang vận chuyển' : recordDetail.status === 'Finish' ? 'Hoàn thành' : recordDetail.status === 'Cancel' ? 'Đã hủy' : recordDetail.status === 'Fail' ? 'Giao thất bại' : recordDetail.status === 'Again' ? 'Gửi lại' : recordDetail.status === 'Delivered' ? 'Đã giao hàng' : 'Hoàn trả'}
 
 
                         </Descriptions.Item>
                         {recordDetail.status === 'Delivered' || recordDetail.status === 'Finish' ? <Descriptions.Item label="Hình ảnh xác nhận" span={6}>
                             <Image src={recordDetail.confirmationImage} width={100} height={100} />
+                        </Descriptions.Item> : recordDetail.status === 'Fail' || recordDetail.status === 'Refund' ? <Descriptions.Item label="Lí do huỷ đơn hàng" span={6}>
+                            <Text>{recordDetail.confirmationImage}</Text>
                         </Descriptions.Item> : ''}
                         <Descriptions.Item label="Hình ảnh mô tả" span={6}>
                             <Row>
-                                {recordDetail.image === null ? <Text>Không có</Text> : recordDetail.image?.split(',').length > 0 ? recordDetail.image?.split(',').map((item, index) => (
+                                {recordDetail.image === null || recordDetail.image === '' ? <Text>Không có</Text> : recordDetail.image?.split(',').length > 0 ? recordDetail.image?.split(',').map((item, index) => (
                                     <div key={index}><Image src={item} width={100} height={100} /></div>
                                 )) : <Image src={recordDetail.image} width={100} height={100} />}
                             </Row>
