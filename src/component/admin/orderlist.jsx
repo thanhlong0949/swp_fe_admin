@@ -66,12 +66,7 @@ const OrderList = ({ showModal }) => {
         }
 
     ];
-    const checkFinish = async (record) => {
-        const response = await api.get(`/Order/${record.orderId}`);
-        console.log("so sanh", response.data.status === 'Finish');
 
-        return response.data.status === 'Finish';
-    }
     const columnsDeli = [
         { title: "Mã đơn hàng", dataIndex: "orderDetailId", key: "orderDetailId" },
         {
@@ -97,61 +92,67 @@ const OrderList = ({ showModal }) => {
 
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
-        { title: 'Thao tác', key: 'action', render: (text, record) => (
-            <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
-        ) },
+        {
+            title: 'Thao tác', key: 'action', render: (text, record) => (
+                <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => showDetailModal(record)}>Xem chi tiết</Button>
+            )
+        },
         {
 
             key: 'update',
             render: (text, record) => (
-                checkFinish(record) ? record.status === 'Delivering' || record.status === 'Fail'
-                    ? <Popover
-                        trigger='click'
-                        title="Xác nhận giao hàng"
-                        content={<div>
-                            <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
-                            <Upload
-                                customRequest={handleUpload}
-                                onChange={handleChange}
-                                fileList={fileList}
-                                maxCount={1}
-                                listType='picture'
-                                accept='image/*'
-                                onRemove={() => {
-                                    setFileList([]);
-                                }}
-
+                record.isDone === false ? null : (
+                    record.status === 'Delivering' || record.status === 'Fail' || record.status === 'Again' ? (
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            {record.status === 'Fail'
+                                ?
+                                <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 2)}>Giao lại</Button>
+                                : <Popover
+                                    trigger='click'
+                                    title="Xác nhận giao hàng"
+                                    content={<div>
+                                        <p>Vui lòng cung cấp hình ảnh để xác nhận giao hàng</p>
+                                        <Upload
+                                            customRequest={handleUpload}
+                                            onChange={handleChange}
+                                            fileList={fileList}
+                                            maxCount={1}
+                                            listType='picture'
+                                            accept='image/*'
+                                            onRemove={() => {
+                                                setFileList([]);
+                                            }}
+                                        >
+                                            <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
+                                        </Upload>
+                                    </div>}
+                                >
+                                    <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 1)}>Giao hàng</Button>
+                                </Popover>}
+                            <Popover
+                                trigger='click'
+                                title="Giao hàng thất bại"
+                                content={<div>
+                                    <p>Lí do huỷ đơn hàng</p>
+                                    <Input required onChange={(e) => setFailReason(e.target.value)} />
+                                </div>}
                             >
-                                <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
-                            </Upload>
+                                <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                            </Popover>
+                        </div>
+                    ) : null
+                )
 
-                        </div>}
-                    >
-                        <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, { type: record.status === 'Fail' ? 2 : 1 })}>{record.status === 'Fail' ? 'Giao lại' : 'Giao hàng'}</Button>
-                    </Popover>
-                    : null : null
             ),
         },
-        {
-            key: 'fail',
-            render: (text, record) => (
-                checkFinish(record) ? record.status === 'Delivering' || record.status === 'Fail'
-                    ? <Popover
-                        trigger='click'
-                        title="Giao hàng thất bại"
-                        content={<div>
-                            <p>Lí do huỷ đơn hàng</p>
-                            <Input required onChange={(e) => setFailReason(e.target.value)} />
-                        </div>}
-                    >
-                        <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
-                    </Popover>
 
-                    : null : null
-            ),
-        }
 
     ];
+    // const checkFinish = async (record) => {
+    //     const response = await api.get(`/Order/${record.orderId}`);
+    //     console.log("so sanh", response.data.status === 'Finish');
+    //     return response.data.status === 'Finish' ? true : false;
+    // }
     const columnOrderDestination = [
 
         { title: "Mã chuyến", dataIndex: "orderId", key: "orderId" },
@@ -233,28 +234,44 @@ const OrderList = ({ showModal }) => {
         }
     }
     const confirmDelivering = async (record, type) => {
+        if (type === 2) {
+            record.status = 'Again';
 
-        if (fileList.length > 0) {
-            record.confirmationImage = fileList[0].url;
-            record.status = type === 1 ? 'Delivered' : 'Again';
-            console.log('record', record);
             try {
                 const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
-                message.success("Giao hàng thành công");
-                const response2 = await api.post('/TrackingOrderD', {
+                await api.post('/TrackingOrderD', {
                     orderDetailId: record.orderDetailId,
-                    trackingId: type === 1 ? 4 : 7,
+                    trackingId: 7,
                 })
+                message.success("Đang giao lại mã đơn " + record.orderDetailId);
                 fetchOrdersListDelivering();
             }
             catch (error) {
                 console.error('Error confirming delivering:', error);
-                message.error("Giao hàng thất bại");
+                message.error("Giao lại thất bại");
             }
-            setFileList([]);
-        }
-        else {
-            message.error("Vui lòng chọn hình ảnh");
+        } else {
+            if (fileList.length > 0) {
+                record.confirmationImage = fileList[0].url;
+                record.status = 'Delivered';
+                console.log('record', record);
+                try {
+                    const response = await api.put(`/OrderDetail/${record.orderDetailId}`, record);
+                    message.success("Giao hàng thành công");
+                    const response2 = await api.post('/TrackingOrderD', {
+                        orderDetailId: record.orderDetailId,
+                        trackingId: 4,
+                    })
+                    fetchOrdersListDelivering();
+                }
+                catch (error) {
+                    console.error('Error confirming delivering:', error);
+                    message.error("Giao hàng thất bại");
+                }
+                setFileList([]);
+            } else {
+                message.error("Vui lòng chọn hình ảnh");
+            }
         }
     }
     const addToOrderModal = async (record) => {
@@ -489,14 +506,22 @@ const OrderList = ({ showModal }) => {
                     onChange={(e) => {
                         setFilterStatus(e);
                     }}
-                >
+                > {user?.role === 'Delivering Staff' ? <>
+                    <Option value="">Tất cả trạng thái</Option>
+                    <Option value="Delivering">Đang vận chuyển</Option>
+                    <Option value="Delivered">Đã giao hàng</Option>
+                    <Option value="Finish">Hoàn thành</Option>
+                    <Option value="Again">Giao lại</Option>
+                    <Option value="Refund">Hoàn trả</Option>
+                    <Option value="Fail">Giao thất bại</Option>
+                </> : <>
                     <Option value="">Tất cả trạng thái</Option>
                     <Option value="Pending">Chờ xử lý</Option>
                     <Option value="Waiting">Chờ lấy hàng</Option>
                     <Option value="Delivering">Đang vận chuyển</Option>
                     <Option value="Delivered">Đã giao hàng</Option>
                     <Option value="Finish">Hoàn thành</Option>
-                    <Option value="Canceled">Đã hủy</Option>
+                    <Option value="Canceled">Đã hủy</Option></>}
                 </Select>
 
                 <Button style={{ backgroundColor: 'blue', color: 'white', width: '88px' }} onClick={() => {

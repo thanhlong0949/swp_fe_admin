@@ -78,7 +78,8 @@ const Shipping = ({ showModal }) => {
         {
             title: "Trạng thái đơn hàng", dataIndex: "status", key: "status"
             , render: (value, record) =>
-                value ? <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' ? 'green' : value === 'Pending' ? 'blue' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : 'Đã giao hàng'}</Tag> : ''
+                value ? <Tag color={value === 'Delivering' || value === 'Waiting' ? 'orange' : value === 'Finish' || value === 'Delivered' || value === 'Again' ? 'green' : value === 'Pending' ? 'blue' : value === 'Fail' ? 'red' : 'red'}>{value === 'Pending' ? 'Chờ xử lý' : value === 'Delivering' ? 'Đang vận chuyển' : value === 'Finish' ? 'Hoàn thành' : value === 'Waiting' ? 'Chờ lấy hàng' : value === 'Canceled' ? 'Đã huỷ' : value === 'Fail' ? 'Giao thất bại' : value === 'Again' ? 'Gửi lại' : value === 'Delivered' ? 'Đã giao hàng' : 'Hoàn trả'}</Tag>
+                    : ''
         },
         { title: "Ngày đặt hàng", render: (value) => moment(value).format('DD/MM/YYYY'), key: "createdDate" },
     ];
@@ -596,7 +597,7 @@ const Shipping = ({ showModal }) => {
                         {
                             title: 'Thao tác',
                             render: (record) => (
-                                record.status === 'Finish' || record.status === 'Delivered' || user?.role === 'Delivering Staff' ? <></> :
+                                shippingDetail.status === 'Finish' || record.status !== 'Delivering' || user?.role === 'Delivering Staff' ? <></> :
                                     <div>
 
                                         <Popconfirm
