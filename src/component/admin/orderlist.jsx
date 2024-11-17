@@ -136,10 +136,10 @@ const OrderList = ({ showModal }) => {
                                     title="Giao hàng thất bại"
                                     content={<div>
                                         <p>Lí do huỷ đơn hàng</p>
-                                        <Input required onChange={(e) => setFailReason(e.target.value)} />
+                                        {record.status === 'Again' ? setFailReason(record.confirmationImage) && <Text>{record.confirmationImage}</Text> : <Input required onChange={(e) => setFailReason(e.target.value)} />}
                                     </div>}
                                 >
-                                    <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Fail' ? 2 : 1)}>{record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                                    <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Again' || record.status === 'Fail' ? 2 : 1)}>{record.status === 'Again' || record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
                                 </Popover>
                             </div>
                         ) : null
