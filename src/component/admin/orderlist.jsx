@@ -132,14 +132,14 @@ const OrderList = ({ showModal }) => {
                                         <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 1)}>Giao hàng</Button>
                                     </Popover>}
                                 <Popover
-                                    trigger='click'
+                                    trigger='hover'
                                     title="Giao hàng thất bại"
                                     content={<div>
-                                        <p>Lí do huỷ đơn hàng</p>
-                                        {record.status === 'Fail' ? setFailReason(record.confirmationImage) && <Text>{record.confirmationImage}</Text> : <Input required onChange={(e) => setFailReason(e.target.value)} />}
+                                        <p>Lí do huỷ đơn hàng {record.status === 'Fail' ? 'là: ' + record.confirmationImage : ''}</p>
+                                        {record.status === 'Fail' ? setFailReason(record.confirmationImage) && <Text>{record.confirmationImage}</Text> : <Input required value={failReason} onChange={(e) => setFailReason(e.target.value)} />}
                                     </div>}
                                 >
-                                    <Button style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Again' || record.status === 'Fail' ? 2 : 1)}>{record.status === 'Again' || record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                                    <Button disabled={failReason === '' || failReason === null} style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Again' || record.status === 'Fail' ? 2 : 1)}>{record.status === 'Again' || record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
                                 </Popover>
                             </div>
                         ) : null
@@ -169,17 +169,18 @@ const OrderList = ({ showModal }) => {
         }
     ]
     const failDelivering = async (record, type) => {
-        console.log("failReason", failReason + " " + type);
+        console.log("failReason", failReason ? failReason + " " + type : type);
         console.log(record.status);
+        let reason = failReason;
+        setFailReason(null);
 
-
-        if (failReason === '') {
+        if (reason === '' || reason === null) {
             message.error("Vui lòng nhập lí do huỷ đơn hàng");
             return;
         }
         try {
             record.status = type === 1 ? 'Fail' : 'Refund';
-            record.confirmationImage = failReason;
+            record.confirmationImage = reason;
             await api.put(`/OrderDetail/${record.orderDetailId}`, record);
             message.success("Đã cập nhật đơn hàng mã " + record.orderDetailId);
             const response2 = await api.post('/TrackingOrderD', {
@@ -190,7 +191,7 @@ const OrderList = ({ showModal }) => {
                 const response3 = await api.post(`/OrderDetail/copy/${record.orderDetailId}`);
                 message.success("Đã tạo đơn hoàn trả hàng");
             }
-            setFailReason('');
+
             fetchOrdersListDelivering();
         }
         catch (error) {
