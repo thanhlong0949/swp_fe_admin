@@ -131,16 +131,19 @@ const OrderList = ({ showModal }) => {
                                     >
                                         <Button style={{ backgroundColor: 'green', color: 'white', width: '150px' }} onClick={() => confirmDelivering(record, 1)}>Giao hàng</Button>
                                     </Popover>}
-                                <Popover
-                                    trigger='hover'
-                                    title="Giao hàng thất bại"
-                                    content={<div>
-                                        <p>Lí do huỷ đơn hàng {record.status === 'Fail' ? 'là: ' + record.confirmationImage : ''}</p>
-                                        {record.status === 'Fail' ? setFailReason(record.confirmationImage) && <Text>{record.confirmationImage}</Text> : <Input required value={failReason} onChange={(e) => setFailReason(e.target.value)} />}
-                                    </div>}
-                                >
-                                    <Button disabled={failReason === '' || failReason === null} style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Again' || record.status === 'Fail' ? 2 : 1)}>{record.status === 'Again' || record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
-                                </Popover>
+
+                                {(record.status === 'Fail' || record.status === 'Again') && record.koiStatus.toLowerCase().includes('hoàn trả')
+                                    ? null
+                                    : <Popover
+                                        trigger='hover'
+                                        title="Giao hàng thất bại"
+                                        content={<div>
+                                            <p>Lí do huỷ đơn hàng {record.status === 'Fail' ? 'là: ' + record.confirmationImage : ''}</p>
+                                            {record.status === 'Fail' ? setFailReason(record.confirmationImage) && <Text>{record.confirmationImage}</Text> : <Input required value={failReason} onChange={(e) => setFailReason(e.target.value)} />}
+                                        </div>}
+                                    >
+                                        <Button disabled={failReason === '' || failReason === null} style={{ backgroundColor: 'red', color: 'white', width: '150px' }} onClick={() => failDelivering(record, record.status === 'Again' || record.status === 'Fail' ? 2 : 1)}>{record.status === 'Again' || record.status === 'Fail' ? 'Hoàn trả' : 'Giao thất bại'}</Button>
+                                    </Popover>}
                             </div>
                         ) : null
                 )
