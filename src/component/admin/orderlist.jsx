@@ -411,6 +411,7 @@ const OrderList = ({ showModal }) => {
             customerName: order.customerName,
             serviceId: order.serviceId,
             price: order.totalPrice,
+            image: order.image,
             status: 'Waiting',
             createdDate: order.createdDate,
             startLocation: order.startLocation,
