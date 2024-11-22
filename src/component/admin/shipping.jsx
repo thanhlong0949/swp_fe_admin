@@ -633,28 +633,19 @@ const Shipping = ({ showModal }) => {
                             expandedRowRender: (record) => (
 
                                 <Row gutter={16}>
-                                    <Col span={3}>
+                                    <Col span={8}>
                                         <Text style={{ fontWeight: 'bold' }}>
                                             <Row>
-                                                <Text>Điểm đi: </Text>
+                                                <Text>Điểm đi: <Text style={{fontWeight: 'normal'}}>{record.startLocation}</Text> </Text>
 
                                             </Row>
                                             <Row>
-                                                <Text>Điểm đến: </Text>
+                                                <Text>Điểm đến: <Text style={{fontWeight: 'normal'}}>{record.destination}</Text> </Text>
                                             </Row>
                                         </Text>
 
                                     </Col>
-                                    <Col span={4}>
-                                        <Text>
-                                            <Row>
-                                                <Text>{record.startLocation} </Text>
-                                            </Row>
-                                            <Row>
-                                                <Text>{record.destination} </Text>
-                                            </Row>
-                                        </Text>
-                                    </Col>
+                                    
                                     <Col span={4}>
                                         <Text style={{ fontWeight: 'bold' }}>
                                             <Row>
@@ -667,7 +658,7 @@ const Shipping = ({ showModal }) => {
                                         </Text>
 
                                     </Col>
-                                    <Col span={4}>
+                                    <Col span={3}>
                                         <Text>
                                             <Row>
                                                 <Text>{record.receiverName} </Text>
@@ -697,7 +688,7 @@ const Shipping = ({ showModal }) => {
                                     <Col span={4}>
                                         <Text>
                                             <Row>
-                                                <Text>{record.attachedItems ? record.attachedItems : 'Không có'} </Text>
+                                                <Text>{record.attachedItem ? record.attachedItem : 'Không có'} </Text>
                                             </Row>
 
 
